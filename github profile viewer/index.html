@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Profile Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        header {
+            background: #24292e;
+            color: white;
+            padding: 20px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 250px;
+            border-radius: 5px;
+            border: none;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #profile {
+            margin-top: 20px;
+        }
+        img {
+            border-radius: 50%;
+        }
+        .repo {
+            background: white;
+            margin: 10px auto;
+            padding: 10px;
+            width: 80%;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        h3 {
+            margin-bottom: 5px;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .stats {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GitHub Profile Viewer</h1>
+        <input type="text" id="username" placeholder="Enter GitHub Username">
+        <button onclick="getProfile()">Search</button>
+    </header>
+
+    <div id="profile"></div>
+    <div id="repos"></div>
+
+    <script>
+        async function getProfile() {
+            const user = document.getElementById("username").value.trim();
+            if (!user) return alert("Please enter a username");
+
+            document.getElementById("profile").innerHTML = "<p>Loading...</p>";
+            document.getElementById("repos").innerHTML = "";
+
+            try {
+                // Fetch user profile
+                const profileRes = await fetch(`https://api.github.com/users/${user}`);
+                if (!profileRes.ok) throw new Error("User not found");
+                const profileData = await profileRes.json();
+
+                // Display profile
+                document.getElementById("profile").innerHTML = `
+                    <img src="${profileData.avatar_url}" width="120" height="120" alt="${profileData.login}">
+                    <h2>${profileData.name || profileData.login}</h2>
+                    <p>${profileData.bio || "No bio available"}</p>
+                    <div class="stats">
+                        <p>Followers: ${profileData.followers} | Following: ${profileData.following}</p>
+                        <p>Public Repos: ${profileData.public_repos}</p>
+                        <p><a href="${profileData.html_url}" target="_blank">View on GitHub</a></p>
+                    </div>
+                `;
+
+                // Fetch repositories
+                const reposRes = await fetch(`https://api.github.com/users/${user}/repos?sort=updated`);
+                const reposData = await reposRes.json();
+
+                document.getElementById("repos").innerHTML = `<h2>Repositories</h2>`;
+                reposData.forEach(repo => {
+                    document.getElementById("repos").innerHTML += `
+                        <div class="repo">
+                            <h3><a href="${repo.html_url}" target="_blank">${repo.name}</a></h3>
+                            <p>${repo.description || "No description"}</p>
+                            <p>⭐ ${repo.stargazers_count} | 🍴 ${repo.forks_count}</p>
+                        </div>
+                    `;
+                });
+
+                // Contribution graph (from GitHub unofficial API)
+                document.getElementById("repos").innerHTML += `
+                    <h2>Contribution Graph</h2>
+                    <img src="https://ghchart.rshah.org/${user}" alt="Contribution graph">
+                `;
+
+            } catch (error) {
+                document.getElementById("profile").innerHTML = `<p style="color:red;">${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

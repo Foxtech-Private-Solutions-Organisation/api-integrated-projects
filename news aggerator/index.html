@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News Aggregator</title>
+<style>
+    body {
+        background-color: #121212;
+        color: white;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background-color: #1f1f1f;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    h1 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+    nav button {
+        background-color: transparent;
+        color: white;
+        border: none;
+        margin-left: 10px;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: 0.3s;
+    }
+    nav button:hover {
+        background-color: #333;
+    }
+    #searchBar {
+        margin: 10px auto;
+        display: flex;
+        justify-content: center;
+    }
+    #searchInput {
+        padding: 10px;
+        width: 60%;
+        border: none;
+        border-radius: 5px;
+    }
+    #articles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        padding: 20px;
+    }
+    .article {
+        background-color: #1f1f1f;
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .article img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .article h3 {
+        font-size: 1.1rem;
+        margin: 10px 0;
+    }
+    .article p {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #ccc;
+    }
+    .btn {
+        padding: 8px;
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 5px;
+        transition: 0.3s;
+    }
+    .btn:hover {
+        background-color: #444;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>📰 My Dark News</h1>
+    <nav>
+        <button onclick="fetchNews('general')">General</button>
+        <button onclick="fetchNews('technology')">Tech</button>
+        <button onclick="fetchNews('business')">Business</button>
+        <button onclick="fetchNews('entertainment')">Entertainment</button>
+        <button onclick="fetchNews('health')">Health</button>
+        <button onclick="fetchNews('sports')">Sports</button>
+    </nav>
+</header>
+
+<div id="searchBar">
+    <input type="text" id="searchInput" placeholder="Search news..." onkeyup="searchNews(event)">
+</div>
+
+<section id="articles"></section>
+
+<script>
+    const apiKey = "f22bd2e0eb0f432e959d4fde1c5c403d";
+    let bookmarks = JSON.parse(localStorage.getItem("bookmarks")) || [];
+
+    async function fetchNews(category = "general") {
+        let url = `https://newsapi.org/v2/top-headlines?country=us&category=${category}&apiKey=${apiKey}`;
+        let res = await fetch(url);
+        let data = await res.json();
+        displayArticles(data.articles);
+    }
+
+    async function searchNews(event) {
+        if (event.key === "Enter") {
+            let query = document.getElementById("searchInput").value;
+            let url = `https://newsapi.org/v2/everything?q=${query}&apiKey=${apiKey}`;
+            let res = await fetch(url);
+            let data = await res.json();
+            displayArticles(data.articles);
+        }
+    }
+
+    function displayArticles(articles) {
+        let container = document.getElementById("articles");
+        container.innerHTML = "";
+        articles.forEach(article => {
+            let div = document.createElement("div");
+            div.classList.add("article");
+            div.innerHTML = `
+                <img src="${article.urlToImage || 'https://via.placeholder.com/300'}" alt="News Image">
+                <h3>${article.title}</h3>
+                <p>${article.description || ''}</p>
+                <a href="${article.url}" target="_blank" class="btn">Read More</a>
+                <button class="btn" onclick="bookmarkArticle('${article.title}', '${article.url}')">🔖 Bookmark</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function bookmarkArticle(title, url) {
+        bookmarks.push({ title, url });
+        localStorage.setItem("bookmarks", JSON.stringify(bookmarks));
+        alert("Article bookmarked!");
+    }
+
+    fetchNews();
+</script>
+
+</body>
+</html>

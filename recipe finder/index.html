@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Recipe Finder (TheMealDB)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: Inter, system-ui, Arial;
+      margin: 18px;
+      background: #f7f7fb;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 6px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    #recipes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 6px 18px rgba(20, 20, 40, .06);
+    }
+
+    .thumb {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .ingredients ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+
+    .loader {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .note {
+      margin-top: 8px;
+      color: #444;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Recipe Finder</h1>
+    <p class="note">Type ingredients (comma separated) — returns recipes that contain <strong>all</strong> listed
+      ingredients.</p>
+
+    <div class="controls">
+      <input id="ingredientInput" placeholder="e.g. chicken, garlic, onion" />
+      <button id="searchBtn">Search</button>
+      <span id="status" class="loader"></span>
+    </div>
+
+    <div id="recipes"></div>
+  </div>
+
+  <script>
+    // --- CONFIG ---
+    const apiBase = 'https://www.themealdb.com/api/json/v1/1';
+
+    // DOM
+    const input = document.getElementById('ingredientInput');
+    const btn = document.getElementById('searchBtn');
+    const statusEl = document.getElementById('status');
+    const recipesEl = document.getElementById('recipes');
+
+    btn.addEventListener('click', () => searchRecipes());
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') searchRecipes();
+    });
+
+    async function searchRecipes() {
+      const raw = input.value.trim();
+      if (!raw) return alert('Please enter at least one ingredient.');
+
+      // normalize ingredients array (trim, remove empties)
+      const ingredients = raw.split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // show loader
+      statusEl.textContent = 'Searching...';
+      btn.disabled = true;
+      recipesEl.innerHTML = '';
+
+      try {
+        // TheMealDB's filter.php supports searching by single ingredient.
+        // To find recipes that contain ALL provided ingredients, we:
+        // 1) run filter.php for each ingredient
+        // 2) get the set of meal IDs for each call
+        // 3) intersect these sets — results contain all ingredients
+        const idSets = [];
+
+        for (const ing of ingredients) {
+          const url = `${apiBase}/filter.php?i=${encodeURIComponent(ing)}`; // <-- correct URL construction
+          // If your editor gave an error here, ensure you're using backticks ( ` ) or use concatenation:
+          //   const url = apiBase + '/filter.php?i=' + encodeURIComponent(ing);
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Network response error: ' + res.status);
+          const data = await res.json();
+          if (!data.meals) {
+            // no meals for this ingredient -> intersection will be empty
+            idSets.push(new Set());
+          } else {
+            const ids = new Set(data.meals.map(m => m.idMeal));
+            idSets.push(ids);
+          }
+        }
+
+        // compute intersection of idSets
+        let intersection = null;
+        for (const s of idSets) {
+          if (intersection === null) intersection = new Set(s);
+          else {
+            // keep only items present in both sets
+            intersection = new Set([...intersection].filter(x => s.has(x)));
+          }
+        }
+        if (!intersection || intersection.size === 0) {
+          recipesEl.innerHTML = `<div class="card small">No recipes found with those ingredients.</div>`;
+          return;
+        }
+
+        // fetch details for intersection ids (limit to, say, 20 results for UI performance)
+        const ids = [...intersection].slice(0, 20);
+
+        // fetch all details in parallel
+        const detailPromises = ids.map(id => fetch(`${apiBase}/lookup.php?i=${id}`).then(r => r.json()));
+        const detailDatas = await Promise.all(detailPromises);
+
+        // render
+        recipesEl.innerHTML = '';
+        for (const d of detailDatas) {
+          if (!d.meals || !d.meals[0]) continue;
+          const meal = d.meals[0];
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          // gather ingredients + measures (up to 20 fields in TheMealDB)
+          const ingrList = [];
+          for (let i = 1; i <= 20; i++) {
+            const name = meal['strIngredient' + i];
+            const measure = meal['strMeasure' + i];
+            if (name && name.trim()) {
+              ingrList.push(`${measure ? measure.trim() : ''} ${name.trim()}`.trim());
+            }
+          }
+
+          card.innerHTML = `
+          <h3>${escapeHtml(meal.strMeal)}</h3>
+          <img class="thumb" src="${meal.strMealThumb}" alt="${escapeHtml(meal.strMeal)}" />
+          <div class="small"><strong>Category:</strong> ${escapeHtml(meal.strCategory || '')} &nbsp; <strong>Area:</strong> ${escapeHtml(meal.strArea || '')}</div>
+          <div class="ingredients">
+            <strong>Ingredients:</strong>
+            <ul>${ingrList.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+          </div>
+          <details style="margin-top:8px">
+            <summary style="cursor:pointer">Instructions</summary>
+            <p style="white-space:pre-wrap; margin-top:8px">${escapeHtml(meal.strInstructions || '')}</p>
+          </details>
+        `;
+          recipesEl.appendChild(card);
+        }
+
+      } catch (err) {
+        console.error(err);
+        recipesEl.innerHTML = `<div class="card small">Error: ${escapeHtml(err.message)}</div>`;
+      } finally {
+        statusEl.textContent = '';
+        btn.disabled = false;
+      }
+    }
+
+    // small helper to escape text inserted into innerHTML
+    function escapeHtml(s) {
+      if (!s) return '';
+      return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+
+    // Optional: prefill example
+    input.value = 'chicken, garlic';
+  </script>
+</body>
+
+</html>

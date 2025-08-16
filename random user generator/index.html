@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random User Contact Manager</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+    }
+    .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    button, select, input {
+        padding: 8px;
+        font-size: 14px;
+    }
+    .user-card, .contact-card {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    img {
+        border-radius: 50%;
+    }
+    .contact-list {
+        margin-top: 20px;
+    }
+    .contacts {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+</style>
+</head>
+<body>
+
+<h1>Random User Contact Manager</h1>
+
+<div class="controls">
+    <button onclick="generateUser()">Generate Random User</button>
+    <input type="text" id="search" placeholder="Search contacts..." oninput="filterContacts()">
+    <select id="genderFilter" onchange="filterContacts()">
+        <option value="">All Genders</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+    </select>
+</div>
+
+<div id="randomUser" class="user-card">
+    <p>Click "Generate Random User" to get started</p>
+</div>
+
+<div class="contact-list">
+    <h2>Saved Contacts</h2>
+    <div class="contacts" id="contactList"></div>
+</div>
+
+<script>
+let contacts = [];
+
+function generateUser() {
+    fetch('https://randomuser.me/api/')
+        .then(res => res.json())
+        .then(data => {
+            let user = data.results[0];
+            let userHTML = `
+                <img src="${user.picture.large}" alt="User Picture">
+                <h3>${user.name.first} ${user.name.last}</h3>
+                <p>Email: ${user.email}</p>
+                <p>Phone: ${user.phone}</p>
+                <p>Gender: ${user.gender}</p>
+                <button onclick='saveContact(${JSON.stringify(user).replace(/"/g, "&quot;")})'>Save Contact</button>
+            `;
+            document.getElementById('randomUser').innerHTML = userHTML;
+        });
+}
+
+function saveContact(user) {
+    contacts.push(user);
+    displayContacts();
+}
+
+function displayContacts(filtered = contacts) {
+    let contactList = document.getElementById('contactList');
+    contactList.innerHTML = '';
+    filtered.forEach(contact => {
+        contactList.innerHTML += `
+            <div class="contact-card">
+                <img src="${contact.picture.thumbnail}" alt="Contact">
+                <h4>${contact.name.first} ${contact.name.last}</h4>
+                <p>${contact.email}</p>
+                <p>${contact.phone}</p>
+                <p>${contact.gender}</p>
+            </div>
+        `;
+    });
+}
+
+function filterContacts() {
+    let searchVal = document.getElementById('search').value.toLowerCase();
+    let genderVal = document.getElementById('genderFilter').value;
+
+    let filtered = contacts.filter(c => {
+        let matchesSearch = `${c.name.first} ${c.name.last}`.toLowerCase().includes(searchVal);
+        let matchesGender = genderVal === '' || c.gender === genderVal;
+        return matchesSearch && matchesGender;
+    });
+
+    displayContacts(filtered);
+}
+</script>
+
+</body>
+</html>

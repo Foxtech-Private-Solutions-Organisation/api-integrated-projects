@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mini Music Player — Last.fm + iTunes</title>
+    <style>
+        :root {
+            --bg: #0b0b0d;
+            --panel: #111215;
+            --muted: #9aa0a6;
+            --accent: #1db954
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, Arial, Helvetica, sans-serif;
+            background: linear-gradient(180deg, #080808, #0f0f12);
+            color: #fff
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.02)
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2cc06b, #1db954);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #022;
+            font-weight: 700
+        }
+
+        .title {
+            font-weight: 700
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .search {
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 5px solid white;
+            background: #0e0e10;
+            color: #fff;
+            width: 320px;
+            max-width: 40vw
+        }
+
+        .btn {
+            background: var(--accent);
+            border: none;
+            color: rgb(255, 255, 255);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        /* layout */
+        main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 18px;
+            padding: 18px;
+            align-items: start
+        }
+
+        @media(max-width:940px) {
+            main {
+                grid-template-columns: 1fr
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: flex-end
+            }
+
+            .search {
+                width: 100%
+            }
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6)
+        }
+
+        /* tracks */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px
+        }
+
+        .track {
+            background: #0f0f12;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.02)
+        }
+
+        .art {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #0b0b0b;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        .meta {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.05
+        }
+
+        .sub {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 500
+        }
+
+        /* small row */
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .small {
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: #fbfbff;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            font-size: 13px
+        }
+
+        /* playlist */
+        .playlist-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 56vh;
+            overflow: auto;
+            padding: 6px
+        }
+
+        .pl-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: #0b0b0c;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            cursor: grab
+        }
+
+        .pl-thumb {
+            width: 56px;
+            height: 56px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #080808
+        }
+
+        .pl-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        .pl-meta {
+            flex: 1;
+            min-width: 0
+        }
+
+        .pl-meta .t {
+            font-weight: 600;
+            font-size: 14px
+        }
+
+        .pl-meta .a {
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        /* player bar */
+        .player {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 14px;
+            background: linear-gradient(180deg, #0b0b0d, #0a0a0b);
+            padding: 10px 14px;
+            border-radius: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            width: min(980px, 94%);
+            border: 1px solid rgba(255, 255, 255, 0.03)
+        }
+
+        .player .title {
+            font-weight: 700
+        }
+
+        .progress {
+            width: 380px;
+            height: 6px;
+            background: #0c0c0c;
+            border-radius: 999px;
+            overflow: hidden
+        }
+
+        .progress>i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            width: 0%
+        }
+
+        /* modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 60
+        }
+
+        .modal.show {
+            display: flex
+        }
+
+        .modal .card {
+            width: min(820px, 96%);
+            max-height: 80vh;
+            overflow: auto;
+            padding: 18px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #0f0f12, #0b0b0d);
+            border: 1px solid rgba(255, 255, 255, 0.04)
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .footer-space {
+            height: 86px
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="logo">LM</div>
+            <div>
+                <div class="title">Mini Music Player</div>
+                <div class="muted" style="font-size:12px">Last.fm (trending & artist info) + iTunes (previews)</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input id="searchInput" class="search" placeholder="Search songs or artists (iTunes preview will play)" />
+            <div style="display:flex;gap:8px">
+                <button id="searchBtn" class="btn">Search</button>
+                <button id="trendingBtn" class="small">Trending</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <div class="panel">
+                <div class="row" style="margin-bottom:12px">
+                    <div><strong>Discover</strong>
+                        <div class="muted" style="font-size:12px">Trending & Search results</div>
+                    </div>
+                    <div><button id="refreshBtn" class="small">Refresh</button></div>
+                </div>
+
+                <div id="resultsGrid" class="grid"></div>
+            </div>
+        </section>
+
+        <aside>
+            <div class="panel">
+                <div class="row" style="margin-bottom:10px">
+                    <div><strong>Playlist</strong>
+                        <div class="muted" style="font-size:12px">Drag to reorder • Saved locally</div>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button id="exportBtn" class="small">Export</button>
+                        <button id="clearBtn" class="small">Clear</button>
+                    </div>
+                </div>
+
+                <div id="playlistList" class="playlist-list"></div>
+                <div style="height:12px"></div>
+                <div style="display:flex;gap:8px">
+                    <button id="prevBtn" class="btn">Prev</button>
+                    <button id="playBtn" class="btn">Play</button>
+                    <button id="nextBtn" class="btn">Next</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- player bar -->
+    <div class="player" id="playerBar">
+        <div style="display:flex;gap:10px;align-items:center">
+            <div style="width:56px;height:56px;border-radius:8px;overflow:hidden;background:#0a0a0a" id="playerThumb">
+                <img id="playerThumbImg" src="" style="width:100%;height:100%;object-fit:cover;display:none"></div>
+            <div style="min-width:0">
+                <div id="playerTitle" class="title">—</div>
+                <div id="playerArtist" class="muted">—</div>
+            </div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;gap:10px;justify-content:center">
+            <button id="playerPrev" class="small">⏮</button>
+            <button id="playerToggle" class="small">▶</button>
+            <button id="playerNext" class="small">⏭</button>
+            <div class="progress"><i id="progFill"></i></div>
+            <div class="muted" id="timeLabel" style="min-width:70px;text-align:right">0:00 / 0:30</div>
+        </div>
+    </div>
+
+    <!-- artist modal -->
+    <div id="modal" class="modal">
+        <div class="card">
+            <div style="display:flex;gap:16px">
+                <div style="width:160px">
+                    <div style="width:160px;height:160px;border-radius:10px;overflow:hidden;background:#0a0a0a"><img
+                            id="modalArt" src="" style="width:100%;height:100%;object-fit:cover"></div>
+                </div>
+                <div style="flex:1">
+                    <h3 id="modalTitle">Artist</h3>
+                    <div id="modalTags" class="muted" style="margin:6px 0"></div>
+                    <div id="modalBio" class="muted">Loading artist info...</div>
+                    <div style="height:12px"></div>
+                    <div style="display:flex;gap:8px"><button id="modalClose" class="small">Close</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-space"></div>
+
+    <script>
+        /* ---------------- CONFIG ---------------- */
+        const LASTFM_API_KEY = "971885e54f76593c58b1ae429a04f158"; // ← <<< insert your Last.fm API key here
+        const LASTFM_BASE = "https://ws.audioscrobbler.com/2.0/";
+        const ITUNES_BASE = "https://itunes.apple.com/search?media=music&limit=1&term=";
+        const FALLBACK_IMG = "https://upload.wikimedia.org/wikipedia/commons/4/4f/Music_Icon.png";
+
+        /* --------------- STATE ------------------ */
+        let state = {
+            tracks: [],      // displayed tracks (objects with: title, artist, img, preview)
+            playlist: JSON.parse(localStorage.getItem("mm_playlist_v1") || "[]"),
+            currentIndex: -1 // index into playlist
+        };
+
+        const resultsGrid = document.getElementById("resultsGrid");
+        const playlistList = document.getElementById("playlistList");
+
+        /* ------------- UTIL --------------------- */
+        function el(tag, html) { const d = document.createElement(tag); if (html) d.innerHTML = html; return d; }
+        function savePlaylist() { localStorage.setItem("mm_playlist_v1", JSON.stringify(state.playlist)); renderPlaylist(); }
+        function formatTime(s) { if (!s) return "0:00"; const m = Math.floor(s / 60), sec = Math.floor(s % 60); return `${m}:${sec.toString().padStart(2, '0')}`; }
+
+        /* ------------- ITUNES helper ------------- */
+        /* Return {preview, artwork} or null */
+        async function fetchItunesPreview(artist, title) {
+            try {
+                const q = encodeURIComponent(`${artist} ${title}`);
+                const res = await fetch(ITUNES_BASE + q);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data.results && data.results.length) {
+                    const r = data.results[0];
+                    return { preview: r.previewUrl || null, artwork: (r.artworkUrl100 ? r.artworkUrl100.replace('100x100bb', '600x600bb') : null) };
+                }
+            } catch (e) { }
+            return null;
+        }
+
+        /* ------------- LAST.FM helpers ------------- */
+        async function lastfm(method, params = {}) {
+            params.api_key = LASTFM_API_KEY;
+            params.format = "json";
+            params.method = method;
+            const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+            const url = LASTFM_BASE + "?" + qs;
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        /* If iTunes preview absent, try Last.fm track.getInfo for album images (no audio) */
+        async function fetchLastFmImage(artist, title) {
+            try {
+                const data = await lastfm("track.getInfo", { artist, track: title });
+                if (data && data.track && data.track.album && data.track.album.image) {
+                    const imgs = data.track.album.image;
+                    for (let i = imgs.length - 1; i >= 0; i--) { if (imgs[i]['#text']) return imgs[i]['#text']; }
+                }
+            } catch (e) { }
+            return FALLBACK_IMG;
+        }
+
+        /* ------------- Render functions ------------- */
+        function renderResults(list) {
+            resultsGrid.innerHTML = "";
+            list.forEach((t, i) => {
+                const card = el('div');
+                card.className = 'track';
+                card.innerHTML = `
+      <div class="art"><img src="${t.img || FALLBACK_IMG}" alt=""></div>
+      <div class="meta">${escapeHtml(t.title)}</div>
+      <div class="sub">${escapeHtml(t.artist)}</div>
+      <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:6px">
+          <button class="small" data-play="${i}">Play</button>
+          <button class="small" data-add="${i}">Add</button>
+          <button class="small" data-info="${i}">Artist</button>
+        </div>
+        <div class="muted" style="font-size:12px">${t.preview ? 'preview' : ''}</div>
+      </div>
+    `;
+                resultsGrid.appendChild(card);
+            });
+        }
+
+        function renderPlaylist() {
+            playlistList.innerHTML = "";
+            state.playlist.forEach((p, i) => {
+                const row = el('div');
+                row.className = 'pl-item';
+                row.draggable = true;
+                row.dataset.index = i;
+                row.innerHTML = `
+      <div class="pl-thumb"><img src="${p.img || FALLBACK_IMG}" alt=""></div>
+      <div class="pl-meta"><div class="t">${escapeHtml(p.title)}</div><div class="a">${escapeHtml(p.artist)}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="small" data-pplay="${i}">▶</button>
+        <button class="small" data-pret="${i}">✖</button>
+      </div>
+    `;
+                playlistList.appendChild(row);
+            });
+            attachDrag();
+        }
+
+        /* ------------- Drag reorder ------------- */
+        function attachDrag() {
+            let dragEl = null;
+            playlistList.querySelectorAll('.pl-item').forEach(item => {
+                item.addEventListener('dragstart', () => { dragEl = item; item.classList.add('dragging'); });
+                item.addEventListener('dragend', () => { if (dragEl) dragEl.classList.remove('dragging'); dragEl = null; savePlaylist(); });
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const after = getDragAfterElement(playlistList, e.clientY);
+                    if (after == null) playlistList.appendChild(dragEl);
+                    else playlistList.insertBefore(dragEl, after);
+                });
+                item.addEventListener('drop', () => {
+                    const items = [...playlistList.querySelectorAll('.pl-item')];
+                    state.playlist = items.map(it => {
+                        const idx = Number(it.dataset.index);
+                        return state.playlist[idx];
+                    });
+                    // reindex
+                    state.playlist = state.playlist.slice();
+                    savePlaylist();
+                    renderPlaylist();
+                });
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.pl-item:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+                    else return closest;
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+        }
+
+        /* ------------- Player logic ------------- */
+        const audio = new Audio();
+        audio.preload = 'auto';
+        let progFill = document.getElementById('progFill');
+        let playerTitle = document.getElementById('playerTitle');
+        let playerArtist = document.getElementById('playerArtist');
+        let playerThumbImg = document.getElementById('playerThumbImg');
+        let playerToggle = document.getElementById('playerToggle');
+        let playerPrev = document.getElementById('playerPrev');
+        let playerNext = document.getElementById('playerNext');
+        let timeLabel = document.getElementById('timeLabel');
+
+        function playAtIndex(i) {
+            if (i < 0 || i >= state.playlist.length) return;
+            state.currentIndex = i;
+            const t = state.playlist[i];
+            if (t.preview) {
+                audio.src = t.preview;
+                audio.play().catch(() => { });
+                playerToggle.innerText = '⏸';
+            } else {
+                // preview missing
+                alert('Preview not available for this track.');
+                return;
+            }
+            playerTitle.innerText = t.title;
+            playerArtist.innerText = t.artist;
+            if (t.img) { playerThumbImg.src = t.img; playerThumbImg.style.display = 'block' } else { playerThumbImg.style.display = 'none' }
+        }
+
+        playerToggle.addEventListener('click', () => { if (audio.paused) audio.play().catch(() => { }), playerToggle.innerText = '⏸'; else audio.pause(), playerToggle.innerText = '▶'; });
+        playerPrev.addEventListener('click', () => { if (state.currentIndex > 0) playAtIndex(state.currentIndex - 1); });
+        playerNext.addEventListener('click', () => { if (state.currentIndex < state.playlist.length - 1) playAtIndex(state.currentIndex + 1); });
+
+        audio.addEventListener('timeupdate', () => { if (!audio.duration) return; const pct = (audio.currentTime / audio.duration) * 100; progFill.style.width = pct + '%'; timeLabel.innerText = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`; });
+        audio.addEventListener('ended', () => { if (state.currentIndex < state.playlist.length - 1) playAtIndex(state.currentIndex + 1); else playerToggle.innerText = '▶'; });
+
+        /* ------------- Actions: search, trending, add, play, artist info ------------- */
+        async function loadTrending(limit = 10) {
+            if (!LASTFM_API_KEY || LASTFM_API_KEY.includes('PUT_YOUR')) { alert('Please add your Last.fm API key in the code to load trending and artist info.'); return; }
+            resultsGrid.innerHTML = '<div class="muted">Loading…</div>';
+            try {
+                const data = await lastfm('chart.gettoptracks', { limit });
+                const tracks = (data.tracks && data.tracks.track) ? data.tracks.track : [];
+                // For each track: first try iTunes preview; if not, use Last.fm image fallback
+                const enriched = await Promise.all(tracks.map(async t => {
+                    const title = t.name, artist = (t.artist && t.artist.name) ? t.artist.name : (t.artist || '');
+                    const it = await fetchItunesPreview(artist, title);
+                    const img = it?.artwork || await fetchLastFmImage(artist, title);
+                    return { title, artist, img, preview: it?.preview || null };
+                }));
+                state.tracks = enriched;
+                renderResults(state.tracks);
+            } catch (e) {
+                resultsGrid.innerHTML = '<div class="muted">Failed to load trending.</div>';
+                console.error(e);
+            }
+        }
+
+        async function doSearch(q) {
+            resultsGrid.innerHTML = '<div class="muted">Searching…</div>';
+            // Use iTunes search first (fast + preview + artwork)
+            try {
+                const r = await fetch(ITUNES_BASE + encodeURIComponent(q) + "&limit=10");
+                const d = await r.json();
+                const list = (d.results || []).map(it => ({ title: it.trackName || it.collectionName || it.artistName, artist: it.artistName, img: it.artworkUrl100 ? it.artworkUrl100.replace('100x100', '600x600') : null, preview: it.previewUrl || null }));
+                // if no results from iTunes, fallback to Last.fm track.search and then enrich
+                if (list.length === 0 && LASTFM_API_KEY && !LASTFM_API_KEY.includes('PUT_YOUR')) {
+                    const lf = await lastfm('track.search', { track: q, limit: 10 });
+                    const matches = lf.results && lf.results.trackmatches && lf.results.trackmatches.track ? lf.results.trackmatches.track : [];
+                    const enriched = await Promise.all(matches.map(async m => {
+                        const title = m.name, artist = (m.artist || '');
+                        const it2 = await fetchItunesPreview(artist, title);
+                        const img = it2?.artwork || await fetchLastFmImage(artist, title);
+                        return { title, artist, img, preview: it2?.preview || null };
+                    }));
+                    state.tracks = enriched;
+                } else {
+                    state.tracks = list;
+                }
+                renderResults(state.tracks);
+            } catch (e) {
+                resultsGrid.innerHTML = '<div class="muted">Search failed.</div>';
+                console.error(e);
+            }
+        }
+
+        /* ---------- Event delegations for result buttons ---------- */
+        resultsGrid.addEventListener('click', (e) => {
+            const p = e.target.closest('[data-play]');
+            const a = e.target.closest('[data-add]');
+            const info = e.target.closest('[data-info]');
+            if (p) {
+                const idx = Number(p.getAttribute('data-play')); // play item from results (also add to playlist automatically)
+                const t = state.tracks[idx];
+                // add to playlist if not already
+                const exists = state.playlist.find(x => x.title === t.title && x.artist === t.artist);
+                if (!exists) { state.playlist.push({ ...t }); savePlaylist(); }
+                const pi = state.playlist.findIndex(x => x.title === t.title && x.artist === t.artist);
+                playAtIndex(pi);
+            }
+            if (a) { const idx = Number(a.getAttribute('data-add')); const t = state.tracks[idx]; state.playlist.push({ ...t }); savePlaylist(); }
+            if (info) { const idx = Number(info.getAttribute('data-info')); openArtistModal(state.tracks[idx].artist, state.tracks[idx].img); }
+        });
+
+        /* ---------- Playlist button delegation ---------- */
+        playlistList.addEventListener('click', (e) => {
+            const pplay = e.target.closest('[data-pplay]');
+            const pret = e.target.closest('[data-pret]');
+            if (pplay) { playAtIndex(Number(pplay.getAttribute('data-pplay'))); }
+            if (pret) { state.playlist.splice(Number(pret.getAttribute('data-pret')), 1); savePlaylist(); }
+        });
+
+        /* ---------- Player control buttons ---------- */
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (state.currentIndex === -1 && state.playlist.length) playAtIndex(0);
+            else if (audio.paused) audio.play().catch(() => { }), playerToggle.innerText = '⏸';
+            else audio.pause(), playerToggle.innerText = '▶';
+        });
+        document.getElementById('prevBtn').addEventListener('click', () => { if (state.currentIndex > 0) playAtIndex(state.currentIndex - 1); });
+        document.getElementById('nextBtn').addEventListener('click', () => { if (state.currentIndex < state.playlist.length - 1) playAtIndex(state.currentIndex + 1); });
+
+        /* ---------- export / clear ---------- */
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(state.playlist, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'playlist.json'; a.click();
+        });
+        document.getElementById('clearBtn').addEventListener('click', () => { if (confirm('Clear playlist?')) { state.playlist = []; savePlaylist(); } });
+
+        /* ---------- search & trending UI ---------- */
+        document.getElementById('searchBtn').addEventListener('click', () => { const q = document.getElementById('searchInput').value.trim(); if (q) doSearch(q); });
+        document.getElementById('trendingBtn').addEventListener('click', () => loadTrending());
+        document.getElementById('refreshBtn').addEventListener('click', () => { if (state.tracks.length) renderResults(state.tracks) });
+        document.getElementById('searchInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
+
+        /* ---------- artist modal ---------- */
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBio = document.getElementById('modalBio');
+        const modalArt = document.getElementById('modalArt');
+        const modalTags = document.getElementById('modalTags');
+        document.getElementById('modalClose').addEventListener('click', () => modal.classList.remove('show'));
+
+        async function openArtistModal(artist, art) {
+            if (!artist) return;
+            modal.classList.add('show');
+            modalTitle.innerText = artist;
+            modalArt.src = art || FALLBACK_IMG;
+            modalBio.innerHTML = '<div class="muted">Loading artist info…</div>';
+            modalTags.innerText = '';
+            if (!LASTFM_API_KEY || LASTFM_API_KEY.includes('PUT_YOUR')) { modalBio.innerHTML = '<div class="muted">Add Last.fm API key to see artist info.</div>'; return; }
+            try {
+                const data = await lastfm('artist.getInfo', { artist });
+                const bio = data.artist && data.artist.bio && data.artist.bio.summary ? data.artist.bio.summary : 'No bio available.';
+                const tags = data.artist && data.artist.tags && data.artist.tags.tag ? data.artist.tags.tag.map(t => t.name).join(', ') : '';
+                modalBio.innerHTML = bio;
+                modalTags.innerText = tags ? `Tags: ${tags}` : '';
+            } catch (e) {
+                modalBio.innerHTML = '<div class="muted">Failed to load artist info.</div>';
+            }
+        }
+
+        /* ---------- small helpers ---------- */
+        function escapeHtml(s) { if (!s) return ''; return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        /* ---------- initial render ---------- */
+        renderPlaylist();
+        if (state.playlist.length === 0) {
+            // if empty, load trending (if API key present)
+            if (LASTFM_API_KEY && !LASTFM_API_KEY.includes('PUT_YOUR')) loadTrending();
+        } else {
+            // pre-render playlist
+            renderPlaylist();
+        }
+
+        /* ---------- expose for debugging ---------- */
+        window.__mm_state = state;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Planner — Weather + Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #f4f6f8; --panel: #ffffff; --text: #1f2937; --muted: #6b7280; --brand: #4a90e2;
+      --ok: #06b6d4; --good: #16a34a; --bad: #ef4444; --warn: #f59e0b;
+    }
+    *{box-sizing:border-box}
+    body { margin:0; font-family: Inter, system-ui, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    header {
+      position: sticky; top:0; z-index: 10;
+      background: var(--brand); color:#fff; padding:12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,.12);
+      display:flex; flex-wrap: wrap; gap:10px; align-items:center; justify-content:space-between;
+    }
+    header h1 { margin:0; font-size: 18px; letter-spacing:.2px; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    input, button, select { font:inherit; }
+    .input, .select { border:1px solid #e5e7eb; background:#fff; color:var(--text); padding:8px 10px; border-radius:8px; }
+    .btn { background:#fff; color:#111827; border:1px solid #e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer; transition:.2s transform, .2s box-shadow; }
+    .btn:hover { box-shadow:0 6px 18px rgba(0,0,0,.08); transform: translateY(-1px); }
+
+    main { display:grid; grid-template-columns: 380px 1fr; gap:16px; padding:16px; }
+    @media (max-width: 1000px) { main { grid-template-columns: 1fr; } #map{ height: 60vh; } }
+
+    #leftCol { display:flex; flex-direction: column; gap:16px; }
+
+    .panel { background: var(--panel); border-radius:14px; box-shadow: 0 8px 30px rgba(0,0,0,.06); overflow:hidden; }
+    .panel h2 { margin:0; font-size:16px; padding:12px 14px; border-bottom:1px solid #f1f5f9; background:#f8fafc; }
+
+    #searchBox { padding:12px; display:flex; gap:8px; }
+    #query { flex:1; }
+    #results { max-height: 260px; overflow:auto; }
+
+    .result { padding:10px 12px; border-top:1px solid #f1f5f9; display:flex; gap:10px; align-items:center; cursor:pointer; }
+    .result:hover { background:#f8fafc; }
+    .coords { color:var(--muted); font-size:12px; }
+
+    #destinations { display:grid; grid-template-columns: 1fr; gap:10px; padding:12px; }
+    .card { border:1px solid #eef2f7; border-radius:12px; padding:12px; display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
+    .card h3 { margin:0 0 6px; font-size:15px; }
+    .meta { color:var(--muted); font-size:12px; }
+    .badge { font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #e5e7eb; }
+    .badge.good { background:#ecfdf5; color:#065f46; border-color:#10b98133; }
+    .badge.ok { background:#f0f9ff; color:#0c4a6e; border-color:#06b6d433; }
+    .badge.warn { background:#fffbeb; color:#7c2d12; border-color:#f59e0b33; }
+    .badge.bad { background:#fef2f2; color:#7f1d1d; border-color:#ef444433; }
+
+    #trip { padding:0; }
+    #tripList { padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .trip-item { border:1px solid #eef2f7; border-radius:12px; padding:10px; display:grid; grid-template-columns: 1fr auto; gap:10px; }
+    .trip-item .dates { font-size:12px; color:var(--muted); }
+
+    #map { width:100%; height: calc(100vh - 80px); border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.06); }
+
+    .small { font-size:12px; color:var(--muted); }
+
+    .row { display:flex; gap:8px; flex-wrap: wrap; }
+    .grow { flex:1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌍 Trip Planner — Weather + Map</h1>
+    <div class="controls">
+      <label class="small">Start <input class="input" type="date" id="startDate"></label>
+      <label class="small">End <input class="input" type="date" id="endDate"></label>
+      <select id="weatherPref" class="select">
+        <option value="any">Any weather</option>
+        <option value="sunny">Prefer sunny</option>
+        <option value="mild">Prefer mild (18–28°C)</option>
+        <option value="dry">Avoid rain</option>
+      </select>
+      <button id="exportBtn" class="btn">⬇️ Export Plan (JSON)</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="leftCol">
+      <div class="panel" id="searchPanel">
+        <h2>🔎 Search destinations</h2>
+        <div id="searchBox">
+          <input class="input grow" id="query" type="text" placeholder="Try 'Paris', 'Tokyo', 'Chennai Beach'..." />
+          <button id="searchBtn" class="btn">Search</button>
+        </div>
+        <div id="results"></div>
+      </div>
+
+      <div class="panel" id="suggestions">
+        <h2>📍 Weather at searched places</h2>
+        <div id="destinations"></div>
+      </div>
+
+      <div class="panel" id="trip">
+        <h2>🧳 Your Trip</h2>
+        <div id="tripList"></div>
+      </div>
+    </section>
+
+    <div id="map"></div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // ====== CONFIG ======
+    const OPENWEATHER_API_KEY = "30cc015f61e80e2d29eba3dbd57b588a"; // provided by you
+    // Note: For place search we use Nominatim (OpenStreetMap). Please respect their usage policy for production apps.
+
+    // ====== STATE ======
+    const state = {
+      map: null,
+      markers: [],
+      searchResults: [],
+      trip: loadTrip(),
+      debounceTimer: null,
+    };
+
+    // ====== MAP INIT ======
+    state.map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(state.map);
+
+    // ====== HELPERS ======
+    function saveTrip(){ localStorage.setItem('trip-planner', JSON.stringify(state.trip)); }
+    function loadTrip(){ try { return JSON.parse(localStorage.getItem('trip-planner')) || []; } catch { return []; } }
+
+    function fmtTemp(t){ return Math.round(t) + '°C'; }
+    function pickBadge({ pop=0, temp=24, pref='any', main='' }){
+      // pop: probability of precipitation (0..1), temp: average temp
+      if(pref==='sunny') return pop < 0.2 ? 'good' : (pop < 0.4 ? 'ok' : 'bad');
+      if(pref==='dry') return pop < 0.2 ? 'good' : (pop < 0.5 ? 'ok' : 'warn');
+      if(pref==='mild') {
+        const mild = temp >= 18 && temp <= 28;
+        if(mild && pop < 0.3) return 'good';
+        if(mild || pop < 0.4) return 'ok';
+        return 'warn';
+      }
+      // any
+      if(pop < 0.3) return 'ok';
+      if(pop < 0.6) return 'warn';
+      return 'bad';
+    }
+
+    function dateRange(){
+      const s = document.getElementById('startDate').value;
+      const e = document.getElementById('endDate').value;
+      return { start: s ? new Date(s) : null, end: e ? new Date(e) : null };
+    }
+
+    function intersectsForecast(date, list){
+      if(!date || !Array.isArray(list)) return null;
+      // find 3h item closest to noon on that date
+      const ymd = d => d.toISOString().slice(0,10);
+      const dayItems = list.filter(i => i.dt_txt.startsWith(ymd(date)));
+      if(dayItems.length === 0) return null;
+      // pick item around 12:00 if present else middle one
+      const noon = dayItems.find(i => i.dt_txt.includes('12:00:00')) || dayItems[Math.floor(dayItems.length/2)];
+      return noon;
+    }
+
+    function avgTempOfDay(list){
+      if(!list || list.length===0) return null;
+      const t = list.reduce((acc,i)=>acc + (i.main?.temp ?? 0), 0) / list.length;
+      const pop = list.reduce((acc,i)=>acc + (i.pop ?? 0), 0) / list.length;
+      const main = (list[0]?.weather?.[0]?.main) || '';
+      return { temp:t, pop, main };
+    }
+
+    function groupByDay(list){
+      const map = {};
+      list.forEach(i=>{
+        const day = i.dt_txt.slice(0,10);
+        (map[day] ||= []).push(i);
+      });
+      return map; // { '2025-08-15': [ ...3h blocks ] }
+    }
+
+    function createMarker(lat, lon, html){
+      const m = L.marker([lat, lon]).addTo(state.map).bindPopup(html);
+      state.markers.push(m);
+      return m;
+    }
+
+    function clearMarkers(){ state.markers.forEach(m=> state.map.removeLayer(m)); state.markers = []; }
+
+    function setMapToBounds(points){
+      if(points.length === 0) return;
+      const bounds = L.latLngBounds(points.map(p=>[p.lat, p.lon]));
+      state.map.fitBounds(bounds.pad(0.2));
+    }
+
+    // ====== WEATHER FETCHERS ======
+    async function getCurrent(lat, lon){
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+      const res = await fetch(url); return res.json();
+    }
+    async function getForecast(lat, lon){
+      const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+      const res = await fetch(url); return res.json(); // list: 3h blocks for ~5 days
+    }
+
+    // ====== PLACE SEARCH (Nominatim) ======
+    async function geocode(q){
+      if(!q.trim()) return [];
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=8&addressdetails=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language':'en' } });
+      return res.json();
+    }
+
+    // ====== UI RENDERING ======
+    async function renderResults(list){
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+      if(list.length === 0){ container.innerHTML = `<div class="small" style="padding:12px">No places found. Try a broader search.</div>`; return; }
+      list.forEach(item=>{
+        const row = document.createElement('div');
+        row.className = 'result';
+        row.innerHTML = `
+          <div style="flex:1">
+            <div><strong>${item.display_name.split(',')[0]}</strong></div>
+            <div class="coords">${item.display_name}</div>
+          </div>
+          <button class="btn">Add</button>
+        `;
+        row.querySelector('button').addEventListener('click', ()=> addDestination(item));
+        row.addEventListener('click', (e)=>{ if(e.target.tagName!== 'BUTTON'){ addDestination(item); } });
+        container.appendChild(row);
+      });
+    }
+
+    async function addDestination(geo){
+      // Convert Nominatim result to our struct
+      const lat = parseFloat(geo.lat), lon = parseFloat(geo.lon);
+      const name = geo.display_name.split(',').slice(0,2).join(', ');
+      const dest = { name, lat, lon };
+      // fetch weather and show card
+      await renderDestinationCards([dest], true);
+      setMapToBounds([{lat,lon}]);
+    }
+
+    async function renderDestinationCards(destinations, append=false){
+      const container = document.getElementById('destinations');
+      if(!append) container.innerHTML = '';
+      clearMarkers();
+      const pref = document.getElementById('weatherPref').value;
+      const points = [];
+
+      for(const dest of destinations){
+        points.push({lat:dest.lat, lon:dest.lon});
+        const [cur, fc] = await Promise.all([ getCurrent(dest.lat, dest.lon), getForecast(dest.lat, dest.lon) ]);
+        const grouped = groupByDay(fc.list || []);
+        const todayKey = new Date().toISOString().slice(0,10);
+        const todayStats = avgTempOfDay(grouped[todayKey]||[]);
+        const pop = todayStats?.pop ?? (cur.rain ? 0.5 : 0) ;
+        const temp = todayStats?.temp ?? cur.main?.temp ?? 24;
+        const badgeKind = pickBadge({ pop, temp, pref, main: cur.weather?.[0]?.main });
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <h3>${dest.name}</h3>
+            <div class="meta">Now: ${fmtTemp(cur.main?.temp)} • ${cur.weather?.[0]?.description ?? ''}</div>
+            <div class="small">Wind ${Math.round(cur.wind?.speed||0)} m/s • Humidity ${cur.main?.humidity ?? '-'}%</div>
+            <div class="row" style="margin-top:6px">
+              <span class="badge ${badgeKind}">Today match: ${badgeKind.toUpperCase()}</span>
+              <button class="btn" data-act="add">Add to Trip</button>
+              <button class="btn" data-act="zoom">Zoom</button>
+              <button class="btn" data-act="details">5‑day details</button>
+            </div>
+          </div>
+          <div>
+            <div class="small" style="text-align:right">Lat ${dest.lat.toFixed(3)}<br>Lon ${dest.lon.toFixed(3)}</div>
+          </div>
+        `;
+        container.appendChild(card);
+
+        // Marker
+        createMarker(dest.lat, dest.lon, `<b>${dest.name}</b><br>${cur.weather?.[0]?.description ?? ''}, ${fmtTemp(cur.main?.temp)}`);
+
+        // Actions
+        card.querySelector('[data-act="zoom"]').addEventListener('click', ()=>{
+          state.map.setView([dest.lat, dest.lon], 11);
+        });
+        card.querySelector('[data-act="add"]').addEventListener('click', ()=>{
+          const {start, end} = dateRange();
+          state.trip.push({ name: dest.name, lat: dest.lat, lon: dest.lon, start: start?.toISOString()?.slice(0,10)||null, end: end?.toISOString()?.slice(0,10)||null, forecast: fc.list||[] });
+          saveTrip();
+          renderTrip();
+        });
+        card.querySelector('[data-act="details"]').addEventListener('click', ()=>{
+          showForecastDialog(dest.name, grouped);
+        });
+      }
+      setMapToBounds(points);
+    }
+
+    function showForecastDialog(name, grouped){
+      const wrap = document.createElement('div');
+      wrap.style.position='fixed'; wrap.style.inset='0'; wrap.style.background='rgba(0,0,0,.5)'; wrap.style.display='grid'; wrap.style.placeItems='center'; wrap.style.zIndex='50';
+      const box = document.createElement('div');
+      box.style.background='#fff'; box.style.borderRadius='14px'; box.style.width='min(680px, 92vw)'; box.style.maxHeight='80vh'; box.style.overflow='auto'; box.style.boxShadow='0 20px 60px rgba(0,0,0,.25)'; box.style.padding='14px';
+      box.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; position:sticky; top:0; background:#fff; padding:6px 4px;">
+          <h3 style="margin:8px 6px;">🗓 5‑day forecast — ${name}</h3>
+          <button class="btn" id="closeDlg">Close</button>
+        </div>`;
+      const content = document.createElement('div');
+      for(const day of Object.keys(grouped)){
+        const stats = avgTempOfDay(grouped[day]);
+        const icon = grouped[day][0]?.weather?.[0]?.icon;
+        const desc = grouped[day][0]?.weather?.[0]?.description || '';
+        const badge = pickBadge({ pop: stats?.pop||0, temp: stats?.temp||24, pref: document.getElementById('weatherPref').value });
+        const row = document.createElement('div');
+        row.className='result';
+        row.innerHTML = `
+          <div style="flex:1">
+            <div><strong>${day}</strong> • ${desc}</div>
+            <div class="coords">Avg ${fmtTemp(stats?.temp||0)} • Rain prob ${(Math.round((stats?.pop||0)*100))}%</div>
+          </div>
+          <span class="badge ${badge}">${badge.toUpperCase()}</span>
+        `;
+        content.appendChild(row);
+      }
+      box.appendChild(content); wrap.appendChild(box); document.body.appendChild(wrap);
+      document.getElementById('closeDlg').onclick = ()=> document.body.removeChild(wrap);
+    }
+
+    function renderTrip(){
+      const list = document.getElementById('tripList');
+      list.innerHTML = '';
+      if(state.trip.length === 0){ list.innerHTML = '<div class="small" style="padding:12px">No destinations added yet. Search above and click “Add to Trip”.</div>'; return; }
+      const pref = document.getElementById('weatherPref').value;
+      const points = [];
+      state.trip.forEach((item, idx)=>{
+        points.push({lat:item.lat, lon:item.lon});
+        // compute badge for start date (or closest day in forecast)
+        const sDate = item.start ? new Date(item.start) : null;
+        let noon = intersectsForecast(sDate, item.forecast);
+        let stats;
+        if(noon){
+          const dayKey = noon.dt_txt.slice(0,10);
+          const grouped = groupByDay(item.forecast);
+          stats = avgTempOfDay(grouped[dayKey]);
+        }
+        const badge = stats ? pickBadge({ pop: stats.pop, temp: stats.temp, pref }) : 'ok';
+
+        const div = document.createElement('div');
+        div.className = 'trip-item';
+        div.innerHTML = `
+          <div>
+            <strong>${item.name}</strong>
+            <div class="dates">${item.start || '—'} → ${item.end || '—'}</div>
+            <div class="small">Lat ${item.lat.toFixed(3)}, Lon ${item.lon.toFixed(3)}</div>
+            <div class="row" style="margin-top:6px">
+              <button class="btn" data-act="view">View</button>
+              <button class="btn" data-act="remove">Remove</button>
+              <button class="btn" data-act="updateDates">Update dates</button>
+            </div>
+          </div>
+          <div style="display:grid; place-items:center; gap:6px">
+            <span class="badge ${badge}">${badge.toUpperCase()}</span>
+            <div class="small">match on start</div>
+          </div>
+        `;
+        div.querySelector('[data-act="view"]').addEventListener('click', ()=> state.map.setView([item.lat, item.lon], 11));
+        div.querySelector('[data-act="remove"]').addEventListener('click', ()=>{
+          state.trip.splice(idx,1); saveTrip(); renderTrip();
+        });
+        div.querySelector('[data-act="updateDates"]').addEventListener('click', async ()=>{
+          const start = prompt('Start date (YYYY-MM-DD):', item.start || '');
+          const end = prompt('End date (YYYY-MM-DD):', item.end || '');
+          if(start!==null) item.start = start || null; if(end!==null) item.end = end || null;
+          saveTrip(); renderTrip();
+        });
+        list.appendChild(div);
+      });
+      setMapToBounds(points);
+    }
+
+    // ====== EVENTS ======
+    const qEl = document.getElementById('query');
+    document.getElementById('searchBtn').addEventListener('click', async ()=>{
+      const q = qEl.value.trim(); if(!q) return; doSearch(q);
+    });
+    qEl.addEventListener('input', ()=>{
+      clearTimeout(state.debounceTimer);
+      state.debounceTimer = setTimeout(()=>{ if(qEl.value.trim()) doSearch(qEl.value.trim()); else renderResults([]); }, 350);
+    });
+
+    async function doSearch(q){
+      document.getElementById('results').innerHTML = '<div class="small" style="padding:12px">Searching…</div>';
+      try {
+        const places = await geocode(q);
+        state.searchResults = places.map(p=>({ ...p, lat: p.lat, lon: p.lon }));
+        renderResults(state.searchResults);
+      } catch(err){
+        console.error(err);
+        document.getElementById('results').innerHTML = '<div class="small" style="padding:12px;color:#b91c1c;">Search failed. Please try again.</div>';
+      }
+    }
+
+    document.getElementById('weatherPref').addEventListener('change', ()=>{
+      // re-evaluate cards and trip badges
+      if(state.searchResults.length){
+        const items = state.searchResults.slice(0,3).map(p=>({ name: p.display_name.split(',').slice(0,2).join(', '), lat: parseFloat(p.lat), lon: parseFloat(p.lon) }));
+        renderDestinationCards(items, false);
+      }
+      renderTrip();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(state.trip, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'trip-plan.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ====== BOOT ======
+    (function init(){
+      // Pre-fill dates: today and +4 days
+      const today = new Date();
+      const plus4 = new Date(Date.now() + 4*86400000);
+      document.getElementById('startDate').value = today.toISOString().slice(0,10);
+      document.getElementById('endDate').value = plus4.toISOString().slice(0,10);
+      renderTrip();
+    })();
+  </script>
+</body>
+</html>

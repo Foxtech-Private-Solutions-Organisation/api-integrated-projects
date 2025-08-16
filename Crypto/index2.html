@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Crypto Tracker — Live Prices, Portfolio & Alerts</title>
+<style>
+  :root{
+    --bg:#0e1320; --panel:#151b2d; --muted:#9aa4b2; --acc:#00e676; --red:#ff5252;
+    --ring: rgba(255,255,255,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    background: radial-gradient(1200px 600px at 10% -20%, #203559 0%, transparent 50%) , linear-gradient(120deg,#0e1320,#0d1220 60%,#0a0f1a);
+    color:#fff;
+  }
+  header{
+    padding:28px 20px 12px; text-align:center;
+  }
+  h1{margin:0 0 6px; font-weight:800; letter-spacing:.3px}
+  .sub{color:var(--muted); font-size:.95rem}
+  .wrap{max-width:1100px; margin:18px auto; padding:0 16px 40px; display:grid; gap:18px}
+  .grid{display:grid; gap:18px}
+  @media(min-width:980px){ .grid{grid-template-columns: 2fr 1fr} }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--ring);
+    border-radius:18px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  input, select, button{
+    background:#0f1526; color:#fff; border:1px solid var(--ring); border-radius:12px;
+    padding:10px 12px; outline:none; font-size:.95rem;
+  }
+  button{cursor:pointer}
+  button.primary{background:linear-gradient(90deg,#22c55e,#06b6d4); border:none}
+  button.ghost{background:transparent}
+  button.danger{background:#2a1620; border-color:#4b1f2f}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 14px}
+  .pill{padding:6px 10px; border-radius:999px; background:#0f1526; color:var(--muted); font-size:.85rem}
+
+  table{width:100%; border-collapse:collapse}
+  th, td{padding:10px 8px; border-bottom:1px solid var(--ring); text-align:left; font-size:.95rem}
+  th{color:#b6c2d6; font-weight:600}
+  tr:hover{background:#121933}
+  .coin{display:flex; align-items:center; gap:10px}
+  .coin img{width:22px; height:22px; border-radius:50%}
+  .muted{color:var(--muted)}
+  .up{color:var(--acc)}
+  .down{color:var(--red)}
+  .flash-up{animation: flashUp 800ms ease}
+  .flash-down{animation: flashDown 800ms ease}
+  @keyframes flashUp{0%{background:rgba(0,230,118,.3)}100%{background:transparent}}
+  @keyframes flashDown{0%{background:rgba(255,82,82,.3)}100%{background:transparent}}
+
+  .totals{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px}
+  .stat{background:#0f1526; border:1px solid var(--ring); padding:12px 14px; border-radius:14px}
+  .stat .label{font-size:.8rem; color:var(--muted)}
+  .stat .value{font-weight:700; font-size:1.05rem}
+
+  .list{display:grid; gap:10px; margin-top:10px}
+  .list-item{
+    display:flex; justify-content:space-between; align-items:center; padding:10px 12px;
+    background:#0f1526; border:1px solid var(--ring); border-radius:12px;
+  }
+  .right{display:flex; gap:8px; align-items:center}
+
+  .footer{color:var(--muted); font-size:.85rem; text-align:right; margin-top:8px}
+  .tag{padding:2px 8px; border-radius:999px; font-size:.75rem; border:1px solid var(--ring); color:#cbd5e1}
+  .hit{background:#0f2a1c; border-color:#17412c; color:#a7f3d0}
+
+  .toast{
+    position:fixed; right:16px; bottom:16px; background:#101828; color:#fff; border:1px solid var(--ring);
+    padding:12px 14px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.35); display:none; z-index:10;
+  }
+  .toast.show{display:block; animation: fade 2.2s ease}
+  @keyframes fade{0%{opacity:0; transform:translateY(6px)}10%{opacity:1; transform:translateY(0)}90%{opacity:1}100%{opacity:0}}
+
+  .hint{font-size:.85rem; color:var(--muted)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>💹 Crypto Tracker</h1>
+    <div class="sub">Live prices • Portfolio tracking • Price alerts (no API key)</div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- Prices -->
+      <section class="card">
+        <div class="row toolbar">
+          <input id="search" placeholder="🔎 Search name or symbol (e.g. btc, eth)" />
+          <span class="pill" id="lastUpdated">Last updated: —</span>
+          <button class="ghost" id="notifBtn">🔔 Enable notifications</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Coin</th>
+              <th>Price (USD)</th>
+              <th>24h</th>
+              <th>Market Cap</th>
+            </tr>
+          </thead>
+          <tbody id="pricesBody">
+            <tr><td colspan="4" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="footer">Source: CoinGecko public API • Auto-refresh every 30s</div>
+      </section>
+
+      <!-- Portfolio -->
+      <section class="card">
+        <h3 style="margin:4px 0 8px">📊 Portfolio</h3>
+        <div class="hint">Track holdings; saved in your browser only.</div>
+
+        <div class="row" style="margin-top:10px">
+          <select id="pfCoin"></select>
+          <input id="pfQty" type="number" min="0" step="any" placeholder="Quantity" />
+          <button class="primary" id="addPf">Add / Update</button>
+        </div>
+
+        <div class="totals">
+          <div class="stat"><div class="label">Total Value</div><div class="value" id="pfTotal">$0</div></div>
+          <div class="stat"><div class="label">Positions</div><div class="value" id="pfCount">0</div></div>
+        </div>
+
+        <div class="list" id="pfList"></div>
+      </section>
+    </div>
+
+    <!-- Alerts -->
+    <section class="card">
+      <h3 style="margin:4px 0 8px">⏰ Price Alerts</h3>
+      <div class="hint">Get notified when a coin goes above/below your target.</div>
+      <div class="row" style="margin-top:10px">
+        <select id="alCoin"></select>
+        <select id="alDir">
+          <option value="above">Above</option>
+          <option value="below">Below</option>
+        </select>
+        <input id="alPrice" type="number" min="0" step="any" placeholder="Target price (USD)"/>
+        <button class="primary" id="addAlert">Add alert</button>
+      </div>
+      <div class="list" id="alertList"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  // ----------- State -----------
+  const API_URL = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h";
+  let coins = [];                      // latest market data (array)
+  let mapById = new Map();             // id -> coin
+  let prevPrices = new Map();          // id -> previous price (for flash)
+  let portfolio = loadLS('portfolio', []); // [{id, qty}]
+  let alerts = loadLS('alerts', []);       // [{id, dir, target, triggered}]
+
+  // ----------- DOM refs -----------
+  const pricesBody = document.getElementById('pricesBody');
+  const searchInput = document.getElementById('search');
+  const lastUpdated = document.getElementById('lastUpdated');
+  const notifBtn = document.getElementById('notifBtn');
+
+  const pfCoin = document.getElementById('pfCoin');
+  const pfQty = document.getElementById('pfQty');
+  const addPf = document.getElementById('addPf');
+  const pfList = document.getElementById('pfList');
+  const pfTotal = document.getElementById('pfTotal');
+  const pfCount = document.getElementById('pfCount');
+
+  const alCoin = document.getElementById('alCoin');
+  const alDir = document.getElementById('alDir');
+  const alPrice = document.getElementById('alPrice');
+  const addAlert = document.getElementById('addAlert');
+  const alertList = document.getElementById('alertList');
+
+  const toast = document.getElementById('toast');
+
+  // ----------- Utils -----------
+  function fmtMoney(n){
+    if(n === null || n === undefined || isNaN(n)) return '—';
+    return '$' + Number(n).toLocaleString(undefined, {maximumFractionDigits: 6});
+  }
+  function fmtPct(p){
+    if(p === null || p === undefined || isNaN(p)) return '—';
+    return (p>=0?'+':'') + p.toFixed(2) + '%';
+  }
+  function saveLS(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  function loadLS(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback } catch{ return fallback } }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 2200);
+  }
+
+  async function enableNotifications(){
+    try{
+      if(!("Notification" in window)) { showToast("Notifications not supported"); return; }
+      if(Notification.permission === "granted"){ showToast("Notifications already enabled"); return; }
+      const res = await Notification.requestPermission();
+      showToast(res === "granted" ? "Notifications enabled" : "Permission denied");
+    }catch(e){ console.error(e); }
+  }
+
+  // ----------- Prices -----------
+  async function fetchPrices(){
+    try{
+      const res = await fetch(API_URL, {cache:"no-store"});
+      const data = await res.json();
+      if(!Array.isArray(data)) throw new Error("Bad response");
+
+      coins = data;
+      mapById = new Map(coins.map(c => [c.id, c]));
+      renderPriceTable();
+      populateSelectors();
+      updatePortfolioUI();
+      evaluateAlerts();
+
+      lastUpdated.textContent = "Last updated: " + new Date().toLocaleTimeString();
+    }catch(err){
+      console.error(err);
+      showToast("Failed to load prices");
+    }
+  }
+
+  function filteredCoins(){
+    const q = (searchInput.value || '').trim().toLowerCase();
+    if(!q) return coins;
+    return coins.filter(c =>
+      c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q)
+    );
+  }
+
+  function renderPriceTable(){
+    const rows = [];
+    for(const c of filteredCoins()){
+      const prev = prevPrices.get(c.id);
+      const changedUp = prev !== undefined && c.current_price > prev;
+      const changedDown = prev !== undefined && c.current_price < prev;
+
+      const flashClass = changedUp ? 'flash-up' : changedDown ? 'flash-down' : '';
+      prevPrices.set(c.id, c.current_price);
+
+      rows.push(`
+        <tr class="${flashClass}">
+          <td>
+            <div class="coin">
+              <img src="${c.image}" alt="${c.name}" loading="lazy"/>
+              <div>${c.name} <span class="muted">(${c.symbol.toUpperCase()})</span></div>
+            </div>
+          </td>
+          <td>${fmtMoney(c.current_price)}</td>
+          <td class="${(c.price_change_percentage_24h ?? 0) >= 0 ? 'up' : 'down'}">
+            ${fmtPct(c.price_change_percentage_24h)}
+          </td>
+          <td class="muted">${fmtMoney(c.market_cap)}</td>
+        </tr>
+      `);
+    }
+    pricesBody.innerHTML = rows.join('') || `<tr><td colspan="4" class="muted">No coins match your search.</td></tr>`;
+  }
+
+  // ----------- Portfolio -----------
+  function populateSelectors(){
+    // Populate once or on first data load; keep selected if present
+    function fill(selectEl){
+      const keep = selectEl.value;
+      selectEl.innerHTML = coins.map(c => `<option value="${c.id}">${c.name} (${c.symbol.toUpperCase()})</option>`).join('');
+      if(keep) selectEl.value = keep;
+    }
+    if(!pfCoin.options.length) fill(pfCoin);
+    if(!alCoin.options.length) fill(alCoin);
+  }
+
+  function setHolding(id, qty){
+    qty = Number(qty);
+    const i = portfolio.findIndex(p => p.id === id);
+    if(qty <= 0){ // remove
+      if(i >= 0) portfolio.splice(i,1);
+    }else{
+      if(i >= 0) portfolio[i].qty = qty;
+      else portfolio.push({id, qty});
+    }
+    saveLS('portfolio', portfolio);
+    updatePortfolioUI();
+  }
+
+  function updatePortfolioUI(){
+    const list = [];
+    let total = 0;
+
+    for(const p of portfolio){
+      const c = mapById.get(p.id);
+      const price = c?.current_price ?? 0;
+      const value = price * Number(p.qty);
+      total += value;
+
+      list.push(`
+        <div class="list-item">
+          <div>
+            <strong>${c?.name ?? p.id}</strong>
+            <span class="muted">(${c?.symbol?.toUpperCase() || ''}) • Qty: ${p.qty}</span>
+          </div>
+          <div class="right">
+            <span class="tag">${fmtMoney(price)} / coin</span>
+            <span class="tag">${fmtMoney(value)}</span>
+            <button class="danger" onclick="removeHolding('${p.id}')">Remove</button>
+          </div>
+        </div>
+      `);
+    }
+
+    pfList.innerHTML = list.join('') || `<div class="hint">No holdings yet. Add one above.</div>`;
+    pfTotal.textContent = fmtMoney(total);
+    pfCount.textContent = portfolio.length;
+  }
+
+  function removeHolding(id){
+    portfolio = portfolio.filter(p => p.id !== id);
+    saveLS('portfolio', portfolio);
+    updatePortfolioUI();
+  }
+  window.removeHolding = removeHolding; // expose for onclick
+
+  // ----------- Alerts -----------
+  function addPriceAlert(id, dir, target){
+    target = Number(target);
+    if(!id || !isFinite(target) || target <= 0) { showToast("Enter a valid target"); return; }
+    alerts.push({id, dir, target, triggered:false});
+    saveLS('alerts', alerts);
+    renderAlerts();
+    showToast("Alert added");
+  }
+
+  function renderAlerts(){
+    alertList.innerHTML = alerts.map((a, idx) => {
+      const c = mapById.get(a.id);
+      const label = c ? `${c.name} (${c.symbol?.toUpperCase()})` : a.id;
+      const hit = a.triggered ? 'hit' : '';
+      return `
+        <div class="list-item">
+          <div>
+            <strong>${label}</strong>
+            <span class="muted"> • ${a.dir.toUpperCase()} ${fmtMoney(a.target)}</span>
+          </div>
+          <div class="right">
+            <span class="tag ${hit}">${a.triggered ? 'Triggered' : 'Active'}</span>
+            <button class="danger" onclick="removeAlert(${idx})">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('') || `<div class="hint">No alerts yet. Add one above.</div>`;
+  }
+  function removeAlert(i){
+    alerts.splice(i,1);
+    saveLS('alerts', alerts);
+    renderAlerts();
+  }
+  window.removeAlert = removeAlert;
+
+  function notify(msg){
+    try{
+      if(("Notification" in window) && Notification.permission === "granted"){
+        new Notification("Crypto Alert", { body: msg });
+      }
+    }catch(e){}
+    showToast(msg);
+  }
+
+  function evaluateAlerts(){
+    if(!coins.length || !alerts.length) return;
+    for(const a of alerts){
+      if(a.triggered) continue;
+      const c = mapById.get(a.id);
+      if(!c) continue;
+      const price = Number(c.current_price);
+      if(a.dir === 'above' && price >= a.target){
+        a.triggered = true; notify(`${c.name} is above ${fmtMoney(a.target)} (${fmtMoney(price)})`);
+      }
+      if(a.dir === 'below' && price <= a.target){
+        a.triggered = true; notify(`${c.name} is below ${fmtMoney(a.target)} (${fmtMoney(price)})`);
+      }
+    }
+    saveLS('alerts', alerts);
+    renderAlerts();
+  }
+
+  // ----------- Events -----------
+  searchInput.addEventListener('input', () => renderPriceTable());
+  notifBtn.addEventListener('click', enableNotifications);
+
+  addPf.addEventListener('click', () => {
+    const id = pfCoin.value;
+    const qty = pfQty.value;
+    setHolding(id, qty);
+    pfQty.value = '';
+  });
+
+  addAlert.addEventListener('click', () => {
+    addPriceAlert(alCoin.value, alDir.value, alPrice.value);
+    alPrice.value = '';
+  });
+
+  // ----------- Init -----------
+  fetchPrices();
+  renderAlerts();
+  updatePortfolioUI();
+  setInterval(fetchPrices, 30_000);
+</script>
+</body>
+</html>
