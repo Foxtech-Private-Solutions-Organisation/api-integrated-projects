@@ -1,1 +1,86 @@
-<html></html>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>🦊Foxtech</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: "Poppins", sans-serif;
+				background: linear-gradient(135deg, #1e3c72, #2a5298);
+				color: #fff;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				padding: 2rem;
+			}
+
+			h1 {
+				font-size: 2.5rem;
+				margin-bottom: 2rem;
+				text-align: center;
+				text-shadow: 0px 3px 6px rgba(0, 0, 0, 0.4);
+			}
+
+			.links-container {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 20px;
+				width: 100%;
+				max-width: 900px;
+			}
+
+			.links-container a {
+				display: block;
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 12px;
+				padding: 20px;
+				text-decoration: none;
+				color: #fff;
+				font-size: 1.1rem;
+				font-weight: 500;
+				text-align: center;
+				backdrop-filter: blur(8px);
+				transition: all 0.3s ease-in-out;
+				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+			}
+
+			.links-container a:hover {
+				background: rgba(255, 255, 255, 0.25);
+				transform: translateY(-5px) scale(1.05);
+				box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+			}
+
+			footer {
+				margin-top: 3rem;
+				font-size: 0.9rem;
+				opacity: 0.7;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Projects</h1>
+		<div class="links-container">
+			<a href="bookfinder/index.html">📚 Book Finder</a>
+			<a href="Crypto/index.html">💰 Crypto</a>
+			<a href="currency converter/index.html">💱 Currency Converter</a>
+			<a href="github profile viewer/index.html">🐙 GitHub Profile Viewer</a>
+			<a href="movie discovery/index.html">🎬 Movie Discovery</a>
+			<a href="music player/index.html">🎵 Music Player</a>
+			<a href="news aggerator/index.html">📰 News Aggregator</a>
+			<a href="random user generator/index.html">👤 Random User Generator</a>
+			<a href="recipe finder/index.html">🥘 Recipe Finder</a>
+			<a href="travel planner/index.html">✈️ Travel Planner</a>
+			<a href="trivia game/index.html">🎲 Trivia Game</a>
+		</div>
+		<footer>Made with ❤️ by Foxtech.dev.labs</footer>
+	</body>
+</html>
