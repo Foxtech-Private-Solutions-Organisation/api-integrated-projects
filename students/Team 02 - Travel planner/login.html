@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Signup | Travel Planner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center/cover;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 🌟 Bloom Animation */
+    @keyframes bloomIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.7) translateY(50px);
+        filter: blur(10px);
+      }
+      60% {
+        opacity: 1;
+        transform: scale(1.05) translateY(-5px);
+        filter: blur(0);
+      }
+      100% {
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .form-box {
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 28px;
+    }
+
+    form {
+      animation: bloomIn 0.9s ease forwards;
+    }
+
+    form.show {
+      animation: bloomIn 0.9s ease forwards;
+    }
+
+    form input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    form button {
+      width: 100%;
+      padding: 12px;
+      background: #28a745;
+      border: none;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    form button:hover {
+      background: #218838;
+      transform: scale(1.02);
+    }
+
+    form p {
+      margin-top: 15px;
+      font-size: 15px;
+    }
+
+    form a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    form a:hover {
+      text-decoration: underline;
+    }
+
+    .error {
+      color: red;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    .success {
+      color: green;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    /* Hide signup form initially */
+    #signupForm {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-box">
+      <h1 id="formTitle">Login</h1>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" class="show">
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Password" required />
+        <button type="submit">Login</button>
+        <p class="error" id="loginError"></p>
+        <p>Don't have an account? <a href="#" id="toSignup">Sign up</a></p>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm">
+        <input type="email" id="signupEmail" placeholder="Email" required />
+        <input type="password" id="signupPassword" placeholder="Password" required />
+        <button type="submit">Sign Up</button>
+        <p class="success" id="signupMsg"></p>
+        <p>Already have an account? <a href="#" id="toLogin">Login</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+    const formTitle = document.getElementById("formTitle");
+
+    // 🔄 Switch to Signup
+    document.getElementById("toSignup").addEventListener("click", (e) => {
+      e.preventDefault();
+      loginForm.style.display = "none";
+      signupForm.style.display = "block";
+
+      signupForm.classList.remove("show");
+      void signupForm.offsetWidth; // ✨ Restart animation
+      signupForm.classList.add("show");
+
+      formTitle.textContent = "Sign Up";
+    });
+
+    // 🔄 Switch to Login
+    document.getElementById("toLogin").addEventListener("click", (e) => {
+      e.preventDefault();
+      signupForm.style.display = "none";
+      loginForm.style.display = "block";
+
+      loginForm.classList.remove("show");
+      void loginForm.offsetWidth;
+      loginForm.classList.add("show");
+
+      formTitle.textContent = "Login";
+    });
+
+    // ✅ Login Logic
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const errorMsg = document.getElementById("loginError");
+
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      const existingUser = users.find(u => u.email === email);
+
+      // If user signed up before → must match credentials
+      if (existingUser) {
+        if (existingUser.password === password) {
+          localStorage.setItem("loggedInUser", email);
+          window.location.href = "home.html";
+        } else {
+          errorMsg.textContent = "Incorrect password for this account.";
+        }
+      } else {
+        // If never signed up → allow login anyway
+        localStorage.setItem("loggedInUser", email);
+        window.location.href = "home.html";
+      }
+    });
+
+    // ✅ Signup Logic
+    signupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+      const successMsg = document.getElementById("signupMsg");
+
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+
+      if (users.find(u => u.email === email)) {
+        successMsg.style.color = "red";
+        successMsg.textContent = "User already exists! Please login.";
+        return;
+      }
+
+      users.push({ email, password });
+      localStorage.setItem("users", JSON.stringify(users));
+      successMsg.style.color = "green";
+      successMsg.textContent = "Signup successful! Redirecting...";
+
+      setTimeout(() => {
+        signupForm.style.display = "none";
+        loginForm.style.display = "block";
+
+        loginForm.classList.remove("show");
+        void loginForm.offsetWidth;
+        loginForm.classList.add("show");
+
+        formTitle.textContent = "Login";
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

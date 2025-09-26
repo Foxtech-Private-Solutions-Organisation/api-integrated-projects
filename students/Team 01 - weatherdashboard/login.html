@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login - Weather Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background: white;
+            color: #001f4d;
+            padding: 2em;
+            border-radius: 8px;
+            width: 320px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 1em;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.5em;
+            margin: 0.5em 0 1em;
+
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        button {
+            background: #001f4d;
+            color: white;
+            padding: 0.75em 1em;
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #003366;
+        }
+
+        .signup-link {
+            margin-top: 1em;
+            font-size: 0.9em;
+        }
+
+        .signup-link a {
+            color: #001f4d;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .signup-link a:hover {
+
+            text-decoration: underline;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <div class="message" id="loginMsg"></div>
+        <div class="signup-link">
+            Don't have an account? <a href="signup.html">Signup</a>
+        </div>
+    </div>
+    <script>
+        function login() {
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+            const loginMsg = document.getElementById("loginMsg");
+            const users = JSON.parse(localStorage.getItem("users") || "[]");
+            const user = users.find(u => u.email === email && u.password === password);
+            if (user) {
+                localStorage.setItem("currentUser", JSON.stringify(user));
+
+                loginMsg.innerHTML = "Login successful! Redirecting...";
+                loginMsg.style.color = "green";
+                setTimeout(() => {
+                    location.href = "dashboard.html";
+                }, 1500);
+            } else {
+                loginMsg.innerHTML = "Invalid email or password";
+                loginMsg.style.color = "red";
+            }
+        }
+    </script>
+</body>
+
+</html>

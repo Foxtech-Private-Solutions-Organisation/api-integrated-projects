@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Plant Encyclopedia</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 0;
+				padding: 0;
+			}
+			#nav {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 200px;
+				background: aqua;
+				z-index: 1000;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+			}
+			#h {
+				font-size: 70px;
+				margin: 0;
+			}
+			#al {
+				width: 100%;
+				max-width: 600px;
+				display: flex;
+				justify-content: center;
+				padding: 0 20px;
+				margin-top: 10px;
+			}
+			#al input,
+			#al button {
+				font-size: 20px;
+				padding: 6px;
+			}
+			#al input {
+				flex: 1;
+				margin-right: 5px;
+			}
+			#sidebar {
+				position: fixed;
+				top: 200px;
+				left: 0;
+				width: 200px;
+				height: calc(100% - 200px);
+				background: #f0f0f0;
+				padding-top: 30px;
+				box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+			}
+			#sidebar a {
+				display: block;
+				padding: 15px 20px;
+				color: #333;
+				font-weight: bold;
+				text-decoration: none;
+			}
+			#sidebar a:hover {
+				background: #ddd;
+			}
+			#main-content {
+				margin-left: 220px;
+				padding: 220px 20px 20px;
+				max-width: 900px; /* constrain width for readability */
+			}
+			#product-list {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 10px 20px;
+				padding-bottom: 40px;
+			}
+			#product-list > div {
+				border: 1px solid #ccc;
+				padding: 10px;
+				max-width: 250px;
+				display: flex;
+				flex-wrap: wrap;
+				vertical-align: top;
+				text-align: center;
+			}
+			section {
+				font-size: 18px;
+				line-height: 1.6;
+				padding: 60px 0;
+			}
+			#contact form {
+				display: flex;
+				flex-direction: column;
+				gap: 15px;
+				max-width: 600px;
+				margin: auto;
+			}
+			#contact input,
+			#contact textarea {
+				padding: 10px;
+				font-size: 16px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+			}
+			#contact button {
+				background: teal;
+				color: #fff;
+				padding: 10px;
+				font-size: 16px;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			#contact button:hover {
+				background: darkcyan;
+			}
+			@media (max-width: 768px) {
+				#sidebar {
+					position: relative;
+					width: 100%;
+					height: auto;
+					top: 0;
+					display: flex;
+					justify-content: center;
+				}
+				#sidebar a {
+					display: inline-block;
+					padding: 10px 15px;
+				}
+				#main-content {
+					margin-left: 0;
+					padding-top: 250px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="nav">
+			<h1 id="h">Plant Encyclopedia</h1>
+			<div id="al">
+				<input type="text" id="search-input" placeholder="Search by name..." />
+				<button id="search-btn">Search</button>
+			</div>
+		</div>
+
+		<div id="sidebar">
+			<a href="#top">HOME</a>
+			<a href="#about">ABOUT</a>
+			<a href="#contact">CONTACT</a>
+		</div>
+
+		<div id="main-content">
+			<div id="product-list"></div>
+
+			<section id="about">
+				<h2>About Us</h2>
+				<p>
+					Welcome to the <strong>Plant Encyclopedia</strong>, your comprehensive and
+					interactive platform dedicated to the fascinating world of plants. Our mission
+					is to make plant knowledge accessible, engaging, and enjoyable for everyone —
+					whether you're a professional botanist, an avid gardener, or simply someone who
+					appreciates the beauty of nature.
+				</p>
+				<p>
+					Plants are the foundation of life on Earth. They provide oxygen, food, shelter,
+					and medicine. They regulate climate, support ecosystems, and inspire cultures
+					across the globe. Yet, despite their importance, many people lack easy access to
+					reliable and detailed information about the diverse species that surround us.
+					That’s where we come in.
+				</p>
+				<p>
+					At Plant Encyclopedia, we harness the power of the Perenual Plant API to bring
+					you an extensive database featuring thousands of plant species from around the
+					world. With a simple search, you can explore plants by common or scientific
+					names and view detailed information including images, taxonomy, and native
+					habitats. Our platform is designed to be intuitive and visually appealing,
+					helping users connect with the natural world in meaningful ways.
+				</p>
+				<p>
+					We understand that plants can sometimes seem mysterious or complex. That’s why
+					we aim not only to provide factual data but also to inspire curiosity and
+					learning. Whether you want to identify a plant in your backyard, learn about
+					rare or exotic species, or research botanical characteristics for your studies,
+					Plant Encyclopedia is here to support your journey.
+				</p>
+				<p>
+					Our commitment goes beyond just data. We strive to foster a community of plant
+					lovers who share their knowledge, experiences, and passion. In future updates,
+					you can expect additional features such as personalized plant collections,
+					seasonal care guides, and tips for sustainable gardening. We also plan to
+					include articles and multimedia content to deepen your understanding and
+					appreciation of plant life.
+				</p>
+				<p>
+					In a world facing environmental challenges like deforestation, habitat loss, and
+					climate change, understanding plants and their roles is more crucial than ever.
+					By connecting people with plant information, we hope to contribute to
+					conservation efforts and encourage more sustainable interactions with nature.
+				</p>
+				<p>
+					Thank you for visiting Plant Encyclopedia. We invite you to explore, learn, and
+					grow with us. Together, let’s celebrate the incredible diversity and beauty of
+					the plant kingdom.
+				</p>
+			</section>
+
+			<section id="contact">
+				<h2>Contact Us</h2>
+				<p>
+					If you have feedback, suggestions, or simply want to say hello, fill out the
+					form below. We'd love to hear from you!
+				</p>
+				<form>
+					<input type="text" placeholder="Your Name" required />
+					<input type="email" placeholder="Your Email" required />
+					<textarea rows="6" placeholder="Your Message" required></textarea>
+					<button type="submit">Send Message</button>
+				</form>
+			</section>
+		</div>
+
+		<script>
+			const API_KEY = "sk-zxV868ccf894c8f3e12459";
+			const searchBtn = document.getElementById("search-btn");
+			const searchInput = document.getElementById("search-input");
+			const container = document.getElementById("product-list");
+
+			function fetchPlants(query) {
+				fetch(
+					`https://perenual.com/api/v2/species-list?key=${API_KEY}&q=${encodeURIComponent(
+						query
+					)}&page=1`
+				)
+					.then((res) => res.json())
+					.then((data) => {
+						container.innerHTML = "";
+						if (!data.data || !data.data.length) {
+							container.innerHTML = `<p>No plants found for "${query}".</p>`;
+							return;
+						}
+						data.data.forEach((species) => {
+							const card = document.createElement("div");
+							card.innerHTML = `
+              <h3>${species.common_name || "No Common Name"}</h3>
+              <p><em>${species.scientific_name}</em></p>
+              <img src="${
+					species.default_image?.original_url ||
+					"https://via.placeholder.com/200x200?text=No+Image"
+				}" 
+                   alt="${
+						species.common_name || "Plant Image"
+					}" style="width:200px; height:auto;" />
+            `;
+							container.appendChild(card);
+						});
+					})
+					.catch(() => {
+						container.innerHTML = `<p>Error fetching data. Please try again.</p>`;
+					});
+			}
+
+			searchBtn.addEventListener("click", () => {
+				const q = searchInput.value.trim();
+				if (!q) return alert("Please enter a plant name to search.");
+				fetchPlants(q);
+			});
+
+			fetchPlants("rose");
+		</script>
+	</body>
+</html>

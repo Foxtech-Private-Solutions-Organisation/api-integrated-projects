@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Signup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #001f4d;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+
+            margin: 0;
+        }
+
+        .signup-container {
+            background: white;
+            color: #001f4d;
+            padding: 2em;
+            border-radius: 8px;
+            width: 320px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 1em;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.5em;
+            margin: 0.5em 0 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        button {
+            background: #001f4d;
+            color: white;
+            padding: 0.75em 1em;
+
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #003366;
+        }
+
+        .login-link {
+            margin-top: 1em;
+            font-size: 0.9em;
+        }
+
+        .login-link a {
+            color: #001f4d;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="signup-container">
+        <h2>Signup</h2>
+        <input type="text" id="signupUsername" placeholder="Username">
+        <input type="email" id="signupEmail" placeholder="Email">
+        <input type="password" id="signupPassword" placeholder="Password">
+        <button onclick="signup()">Signup</button>
+        <div class="message" id="signupMsg"></div>
+        <div class="login-link">
+            Already have an account? <a href="login.html">Login</a>
+        </div>
+    </div>
+    <script>
+        function signup() {
+            const username = document.getElementById("signupUsername").value;
+            const email = document.getElementById("signupEmail").value;
+            const password = document.getElementById("signupPassword").value;
+            const signupMsg = document.getElementById("signupMsg");
+            if (!username || !email || !password) {
+                signupMsg.innerHTML = "Please fill all fields";
+                signupMsg.style.color = "red";
+                return;
+            }
+            const users = JSON.parse(localStorage.getItem("users") || "[]");
+            if (users.find(u => u.email === email)) {
+                signupMsg.innerHTML = "Email already exists";
+                signupMsg.style.color = "red";
+                return;
+
+            }
+            users.push({ username, email, password });
+            localStorage.setItem("users", JSON.stringify(users));
+            signupMsg.innerHTML = "Signup successful! Redirecting...";
+            signupMsg.style.color = "green";
+            setTimeout(() => {
+                location.href = "dashboard.html";
+            }, 1500);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Search History | Travel Planner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center/cover;
+      margin: 0;
+      padding: 20px;
+      position: relative;
+    }
+
+    /* 🌫️ Light overlay to dull background */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 60px auto;
+      background: #ffffffd9;
+      padding: 30px;
+      border-radius: 15px;
+      border: 1px solid #ddd;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+      font-size: 28px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f8f8;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    li:hover {
+      background: #e9f5ff;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #d9534f;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .delete-btn:hover {
+      color: #b52b27;
+    }
+
+    .back-btn {
+      display: block;
+      margin-bottom: 20px;
+      background: #2196f3;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .back-btn:hover {
+      background: #1769aa;
+    }
+
+    .no-history {
+      text-align: center;
+      padding: 20px;
+      font-size: 16px;
+      color: #666;
+      background: #f0f0f0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <button class="back-btn" onclick="window.location.href='home.html'">⬅ Back to Home</button>
+    <h2>Search History</h2>
+    <ul id="historyList"></ul>
+  </div>
+
+  <script>
+    let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+    const historyList = document.getElementById("historyList");
+
+    function displayHistory() {
+      historyList.innerHTML = "";
+      if (history.length === 0) {
+        const noHistory = document.createElement("div");
+        noHistory.className = "no-history";
+        noHistory.textContent = "No searches yet!";
+        historyList.appendChild(noHistory);
+        return;
+      }
+
+      history.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+
+        // ✅ Simple delete button (×)
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.textContent = "×";
+        delBtn.title = "Delete";
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          history.splice(index, 1);
+          localStorage.setItem("searchHistory", JSON.stringify(history));
+          displayHistory();
+        };
+
+        li.appendChild(delBtn);
+
+        // Click to autofill and go back
+        li.onclick = () => {
+          localStorage.setItem("lastSelectedSearch", item);
+          window.location.href = "home.html";
+        };
+
+        historyList.appendChild(li);
+      });
+    }
+
+    displayHistory();
+  </script>
+</body>
+
+</html>

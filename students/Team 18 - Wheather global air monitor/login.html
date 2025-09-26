@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>VJ WEATHER - Login</title>
+    <style>
+        .main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .input {
+            width: 300px;
+            margin-top: 10px;
+            height: 40px;
+            border-radius: 10px;
+            padding-left: 10px;
+        }
+
+        .main2 {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #submit {
+            margin-top: 10px;
+            height: 50px;
+            width: 100px;
+            border-radius: 25px;
+            background-color: rgb(179, 179, 222);
+            cursor: pointer;
+        }
+
+        .login {
+            display: flex;
+            text-align: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <form action="register.php" method="POST">
+            <div class="main2">
+                <h2>LOGIN</h2>
+                <input type="text" name="email" placeholder="Email" class="input" required />
+                <input type="password" name="password" placeholder="Password" class="input" required />
+                <div class="login">
+                    <button type="submit" id="submit">LOGIN</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

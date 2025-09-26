@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Planner | Home</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: #f4f7fb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh; /* ensures footer stays at bottom */
+    }
+
+    /* Navbar */
+    nav {
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      padding: 15px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    nav h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+    nav ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+    nav ul li {
+      margin-left: 25px;
+    }
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    nav ul li a:hover {
+      text-decoration: underline;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 100px 20px; /* more padding for stretched look */
+      background: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e") no-repeat center center;
+      background-size: cover; /* make image stretch properly */
+      color: white;
+      position: relative;
+      flex: 1; /* pushes footer to bottom */
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+    .hero h2 {
+      font-size: 2.8em;
+      margin-bottom: 10px;
+    }
+    .hero p {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #ffcc00;
+      color: #333;
+      font-weight: bold;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background: #fff;
+      color: #000;
+    }
+
+    /* Features Section */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 40px;
+    }
+    .card {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+    }
+    .card h3 {
+      margin-bottom: 10px;
+      color: #4facfe;
+    }
+
+    /* Footer */
+    footer {
+      background: #333;
+      color: #ddd;
+      text-align: center;
+      padding: 15px;
+      margin-top: auto; /* keeps footer at bottom */
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav>
+    <h1>🌍 Travel Planner</h1>
+    <ul>
+      <li><a href="home.html">Home</a></li>
+      <li><a href="about_us.html">About us</a></li>
+      <li><a href="contact_us.html">Contact us</a></li>
+      <li><a href="login.html">Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Plan Your Perfect Journey</h2>
+      <p>Discover new places, create your itinerary, and manage your travel plans easily.</p>
+      <a href="index.html" class="btn">Start Planning</a>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="card">
+      <h3>🗺 Explore Destinations</h3>
+      <p>Browse popular travel spots, learn the best time to visit, and get travel tips.</p>
+    </div>
+    <div class="card">
+      <h3>📝 Create Plans</h3>
+      <p>Save your trip details, set travel dates, and design your personalized itinerary.</p>
+    </div>
+    <!-- <div class="card">
+      <h3>💰 Manage Budget</h3>
+      <p>Track travel expenses, compare options, and keep your trip within budget.</p>
+    </div> -->
+    <div class="card">
+      <h3>📍 Maps & Routes</h3>
+      <p>Find nearby attractions, restaurants, and navigate easily with maps.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 Travel Planner | Mini Project</p>
+  </footer>
+</body>
+</html>

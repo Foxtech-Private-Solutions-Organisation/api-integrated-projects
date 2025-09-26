@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Favorites - Weather App</title>
+		<style>
+			body {
+				margin: 0;
+				font-family: "Segoe UI", sans-serif;
+				display: flex;
+				height: 100vh;
+				background: #ffffff;
+				color: #001f4d;
+			}
+			/* Sidebar */
+			.sidebar {
+				width: 220px;
+				background: linear-gradient(135deg, #0a38ae, #bccae5);
+				color: #fff;
+				display: flex;
+				flex-direction: column;
+				padding: 25px 15px;
+			}
+			.sidebar h2 {
+				text-align: center;
+				margin-bottom: 30px;
+				font-weight: 600;
+			}
+			.nav-links {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+			}
+			.nav-links a {
+				color: #dbe4ff;
+				padding: 10px 12px;
+				text-decoration: none;
+				border-radius: 6px;
+				font-size: 0.95rem;
+				transition: background 0.3s ease;
+			}
+			.nav-links a:hover,
+			.nav-links a.active {
+				background: rgba(255, 255, 255, 0.15);
+				color: #ffffff;
+			}
+			.nav-links a i {
+				margin-right: 10px;
+				width: 18px;
+				text-align: center;
+				color: #dbe4ff;
+				transition: color 0.3s;
+			}
+			.nav-links a:hover i,
+			.nav-links a.active i {
+				color: #ffffff;
+			}
+			/* Main */
+			.main {
+				flex: 1;
+				padding: 30px;
+				overflow-y: auto;
+			}
+			h1 {
+				margin-top: 0;
+				font-weight: 700;
+				font-size: 2.5rem;
+				max-width: fit-content;
+			}
+			/* Search Box */
+			.search-box {
+				display: flex;
+				gap: 10px;
+				margin-bottom: 25px;
+			}
+			.search-box input {
+				flex: 1;
+				padding: 10px 14px;
+				border: 1px solid #ccd6f6;
+				border-radius: 6px;
+				font-size: 0.95rem;
+				outline: none;
+				transition: border 0.3s;
+				color: #001f4d;
+			}
+			.search-box input:focus {
+				border-color: #001f4d;
+			}
+			/* Buttons */
+			.btn {
+				padding: 10px 16px;
+				border: none;
+				border-radius: 6px;
+				cursor: pointer;
+				background: #001f4d;
+				color: #ffffff;
+				font-weight: 500;
+				transition: background 0.3s ease;
+				user-select: none;
+			}
+			.btn:hover {
+				background: #002966;
+			}
+			/* Cards */
+			.card {
+				background: #ffffff;
+				border: 1px solid #e6eaf2;
+				border-radius: 8px;
+				padding: 20px;
+				margin: 20px 0;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+				transition: box-shadow 0.3s ease;
+			}
+			.card:hover {
+				box-shadow: 0 4px 14px rgba(0, 31, 77, 0.15);
+			}
+			.card h3 {
+				margin-top: 0;
+				margin-bottom: 8px;
+				font-weight: 600;
+				color: #001f4d;
+			}
+			.card p {
+				margin: 6px 0;
+				color: #444d6e;
+				font-size: 1rem;
+			}
+			/* List of favorites */
+			.list {
+				list-style: none;
+				padding: 0;
+				margin: 15px 0;
+				max-width: 320px;
+			}
+			.list li {
+				background: #f8f9fa;
+				padding: 12px 16px;
+				margin: 8px 0;
+				border-radius: 6px;
+				color: #001f4d;
+				font-weight: 600;
+				box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+				transition: background 0.3s ease;
+				cursor: default;
+			}
+			.list li:hover {
+				background: #e6efff;
+			}
+		</style>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
+	</head>
+	<body>
+		<!-- Sidebar -->
+		<aside class="sidebar">
+			<h2>Weather</h2>
+			<div class="nav-links">
+				<a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+				<a href="favorites.html" class="active"><i class="fas fa-star"></i> Favorites</a>
+				<a href="history.html"><i class="fas fa-history"></i> History</a>
+				<a href="about.html"><i class="fas fa-info-circle"></i> About</a>
+				<a href="help.html"><i class="fas fa-question-circle"></i> Help</a>
+				<a href="feedback.html"><i class="fas fa-comment"></i> Feedback</a>
+			</div>
+		</aside>
+		<!-- Main -->
+		<main class="main">
+			<h1>Favorites</h1>
+			<!-- Add manually -->
+			<form id="favoritesForm" class="search-box">
+				<input type="text" id="favoriteInput" placeholder="Enter city to add" required />
+				<button type="submit" class="btn">Add</button>
+			</form>
+			<!-- Weather cards -->
+			<div id="favoritesContainer"></div>
+			<!-- Simple list of all favorites -->
+			<h3>All Favorite Cities</h3>
+			<ul id="favoritesList" class="list"></ul>
+		</main>
+		<script>
+			let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+			async function fetchWeather(city) {
+				const apiKey = "d151b0671b8b60f140e2a3c83b8d0311";
+				try {
+					const res = await fetch(
+						`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+					);
+					if (!res.ok) throw new Error("Weather not found");
+					return await res.json();
+				} catch (e) {
+					console.error(e);
+					return null;
+				}
+			}
+			function addFavorite(city) {
+				if (city && !favorites.includes(city)) {
+					favorites.push(city);
+					localStorage.setItem("favorites", JSON.stringify(favorites));
+					renderFavorites();
+					renderFavoritesList();
+				}
+			}
+			function removeFavorite(city) {
+				favorites = favorites.filter((f) => f !== city);
+				localStorage.setItem("favorites", JSON.stringify(favorites));
+				renderFavorites();
+				renderFavoritesList();
+			}
+			async function renderFavorites() {
+				const container = document.getElementById("favoritesContainer");
+				container.innerHTML = "";
+				if (favorites.length === 0) {
+					container.innerHTML = "<p>No favorites added yet.</p>";
+					return;
+				}
+				for (const city of favorites) {
+					const data = await fetchWeather(city);
+					if (!data) continue;
+					container.innerHTML += `
+<div class="card">
+<h3>${data.name}, ${data.sys.country}</h3>
+<p>${data.weather[0].description}</p>
+<p><strong>${Math.round(data.main.temp)}°C</strong></p>
+<button class="btn" onclick="viewWeather('${city}')">View</button>
+<button class="btn" onclick="removeFavorite('${city}')">Remove</button>
+</div>
+`;
+				}
+			}
+			function renderFavoritesList() {
+				const list = document.getElementById("favoritesList");
+				list.innerHTML = favorites.map((city) => `<li>${city}</li>`).join("");
+			}
+			function viewWeather(city) {
+				// Redirect to dashboard with selected city
+				localStorage.setItem("selectedCity", city);
+				window.location.href = "dashboard.html";
+			}
+			document.getElementById("favoritesForm").addEventListener("submit", (e) => {
+				e.preventDefault();
+				const city = document.getElementById("favoriteInput").value.trim();
+				if (city) {
+					addFavorite(city);
+					document.getElementById("favoriteInput").value = "";
+				}
+			});
+			// Load on page open
+			renderFavorites();
+			renderFavoritesList();
+		</script>
+	</body>
+</html>

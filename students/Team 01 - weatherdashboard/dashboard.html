@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Weather App</title>
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  height: 100vh;
+  background: linear-gradient(135deg, #dbe4ff, #f8f9fa, #e0f2ff);
+  color: #0745a0;
+}
+
+/* Sidebar */
+.sidebar {
+width: 220px;
+background: linear-gradient(135deg, #0a38ae, #bccae5);
+color: #fff;
+display: flex;
+flex-direction: column;
+padding: 25px 15px;
+}
+.sidebar h2 {
+text-align: center;
+margin-bottom: 30px;
+font-weight: 600;
+}
+.nav-links {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.nav-links a {
+color: #dbe4ff;
+padding: 10px 12px;
+text-decoration: none;
+border-radius: 6px;
+font-size: 0.95rem;
+transition: background 0.3s ease;
+}
+.nav-links a:hover,
+.nav-links a.active {
+background: rgba(255, 255, 255, 0.15);
+color: #ffffff;
+}
+/* Main */
+.main {
+flex: 1;
+padding: 30px;
+overflow-y: auto;
+}
+h1 {
+margin-top: 0;
+font-weight: 700;
+font-size: 2.5rem;
+max-width: fit-content;
+}
+/* Search Box */
+.search-box {
+display: flex;
+gap: 10px;
+margin-bottom: 25px;
+}
+.search-box input {
+flex: 1;
+padding: 10px 14px;
+border: 1px solid #ccd6f6;
+border-radius: 6px;
+font-size: 0.95rem;
+outline: none;
+transition: border 0.3s;
+}
+.search-box input:focus {
+border-color: #001f4d;
+}
+.btn {
+padding: 10px 16px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+background: linear-gradient(135deg, #1141bb, #bccae5);;
+color: #ffffff;
+font-weight: 500;
+transition: background 0.3s ease;
+}
+.btn:hover {
+background: #002966;
+}
+/* Weather Display */
+.weather-display {
+display: none;
+margin: 20px 0;
+padding: 20px;
+border-radius: 8px;
+background: #f8f9fa;
+border: 1px solid #e6eaf2;
+}
+.weather-display h2 {
+margin-top: 0;
+font-size: 1.3rem;
+color: #001f4d;
+}
+.weather-display h1 {
+font-size: 2.4rem;
+margin: 10px 0;
+color: #001f4d;
+}
+/* Forecast */
+/* Forecast */
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.forecast-item {
+  background: linear-gradient(135deg, #dbe4ff, #f8f9fa);
+  border: none;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 31, 77, 0.2);
+}
+
+.forecast-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0, 31, 77, 0.3);
+  background: linear-gradient(135deg, #a5bdfc, #e9f0ff);
+}
+
+.forecast-item strong {
+  color: #001f4d;
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.nav-links a i {
+margin-right: 10px;
+width: 18px;
+text-align: center;
+color: #dbe4ff;
+transition: color 0.3s;
+}
+.nav-links a:hover i,
+.nav-links a.active i {
+color: #ffffff;
+}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+<!-- Sidebar -->
+<aside class="sidebar">
+<h2>Weather</h2>
+<div class="nav-links">
+<a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"><strong></i> Dashboard</strong></a>
+<a href="favorites.html"><i class="fas fa-star"></i> <strong>Favorites</strong></a>
+<a href="history.html"><i class="fas fa-history"></i> <strong>History</strong></a>
+<a href="about.html"><i class="fas fa-info-circle"></i> <strong>About</strong></a>
+<a href="help.html"><i class="fas fa-question-circle"></i><strong> Help</strong></a>
+<a href="feedback.html"><i class="fas fa-comment"></i> <strong>Feedback</strong></a>
+</div>
+</aside>
+<!-- Main -->
+<main class="main">
+<h1>Weather Dashboard</h1>
+<form id="weatherForm" class="search-box">
+<input type="text" id="cityInput" placeholder="Enter city (e.g., London)" required>
+<button type="submit" class="btn">Search</button>
+</form>
+<div id="weatherDisplay" class="weather-display">
+<h2 id="weatherLocation"></h2>
+<p id="weatherDescription"></p>
+<h1><span id="currentTemp">--</span>°C</h1>
+<p>Feels like <span id="feelsLike">--</span>°C</p>
+<p>
+Humidity: <span id="humidity">--</span>% |
+Wind: <span id="windSpeed">--</span> km/h |
+Pressure: <span id="pressure">--</span> hPa
+</p>
+<button onclick="addFavoriteFromDashboard()" class="btn">Add to
+Favorites</button>
+</div>
+<h3>5-Day Forecast</h3>
+<div id="forecastContainer" class="forecast-grid"></div>
+</main>
+<script>
+let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+let history = JSON.parse(localStorage.getItem("history") || "[]");
+let lastSearchedCity = null;
+async function fetchWeather(city) {
+const apiKey = "d151b0671b8b60f140e2a3c83b8d0311";
+try {
+const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`);
+if (!res.ok) throw new Error("Weather not found");
+const data = await res.json();
+document.getElementById("weatherLocation").textContent = `${data.name},
+${data.sys.country}`;
+document.getElementById("weatherDescription").textContent =
+data.weather[0].description;
+document.getElementById("currentTemp").textContent = Math.round(data.main.temp);
+document.getElementById("feelsLike").textContent =
+Math.round(data.main.feels_like);
+document.getElementById("humidity").textContent = data.main.humidity;
+document.getElementById("windSpeed").textContent = Math.round(data.wind.speed *
+3.6);
+document.getElementById("pressure").textContent = data.main.pressure;
+document.getElementById("weatherDisplay").style.display = "block";
+lastSearchedCity = data.name;
+// Save to history
+history.unshift(data.name);
+localStorage.setItem("history", JSON.stringify(history));
+fetchForecast(city, apiKey);
+} catch (e) {
+alert(e.message);
+}
+}
+async function fetchForecast(city, apiKey) {
+try {
+const res = await fetch(
+`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`);
+if (!res.ok) throw new Error("Forecast not found");
+const data = await res.json();
+const forecastContainer = document.getElementById("forecastContainer");
+forecastContainer.innerHTML = "";
+const daily = {};
+data.list.forEach(item => {
+if (item.dt_txt.includes("12:00:00")) {
+const date = new Date(item.dt * 1000).toLocaleDateString("en-US", {
+weekday: "short", month: "short", day: "numeric"
+});
+daily[date] = {
+temp: Math.round(item.main.temp),
+desc: item.weather[0].description
+};
+}
+});
+Object.keys(daily).slice(0, 5).forEach(date => {
+const f = daily[date];
+forecastContainer.innerHTML += `
+<div class="forecast-item">
+<div><strong>${date}</strong></div>
+<div>${f.temp}°C</div>
+<div>${f.desc}</div>
+</div>`;
+});
+} catch (e) {
+console.error(e);
+}
+}
+document.getElementById("weatherForm").addEventListener("submit", e => {
+e.preventDefault();
+const city = document.getElementById("cityInput").value.trim();
+if (city) fetchWeather(city);
+});
+function addFavoriteFromDashboard() {
+if (lastSearchedCity && !favorites.includes(lastSearchedCity)) {
+favorites.push(lastSearchedCity);
+localStorage.setItem("favorites", JSON.stringify(favorites));
+alert(`${lastSearchedCity} added to Favorites!`);
+}
+}
+// Auto-load selected city if redirected from History/Favorites
+window.addEventListener("DOMContentLoaded", () => {
+const selectedCity = localStorage.getItem("selectedCity");
+if (selectedCity) {
+fetchWeather(selectedCity);
+localStorage.removeItem("selectedCity"); // clear after use
+}
+});
+</script>
+</body>
+</html>

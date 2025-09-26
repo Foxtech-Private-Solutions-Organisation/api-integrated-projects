@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Help - Weather App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #ffffff;
+            color: #001f4d;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: #001f4d;
+            color: #fff;
+            display: flex;
+
+            flex-direction: column;
+            padding: 25px 15px;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-links a {
+            color: #dbe4ff;
+            padding: 10px 12px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: background 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .nav-links a i {
+            margin-right: 10px;
+
+            width: 18px;
+            text-align: center;
+            color: #dbe4ff;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover i,
+        .nav-links a.active i {
+            color: #ffffff;
+        }
+
+        /* Main */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-width: calc(100vw - 220px);
+            margin: 0;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-weight: 700;
+            font-size: 2.5rem;
+            max-width: fit-content;
+            border-bottom: 3px solid #001f4d;
+            padding-bottom: 6px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+
+            color: #324868;
+            max-width: 700px;
+            margin: 20px 0;
+        }
+
+        /* Help content */
+        .faq-section {
+            margin-top: 40px;
+        }
+
+        .faq-item {
+            background: #f8faff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 31, 77, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            cursor: default;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 5px 18px rgba(0, 31, 77, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .faq-item h3 {
+            margin-top: 0;
+            font-size: 1.3rem;
+            color: #001f4d;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .faq-item p {
+            margin: 0;
+            color: #56729a;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-
+awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+<body>
+    <aside class="sidebar">
+        <h2>Weather</h2>
+        <div class="nav-links">
+            <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="favorites.html"><i class="fas fa-star"></i> Favorites</a>
+            <a href="history.html"><i class="fas fa-history"></i> History</a>
+            <a href="about.html"><i class="fas fa-info-circle"></i> About</a>
+            <a href="help.html" class="active"><i class="fas fa-question-circle"></i> Help</a>
+            <a href="feedback.html"><i class="fas fa-comment"></i> Feedback</a>
+        </div>
+    </aside>
+    <main>
+        <h1>Help & Support</h1>
+        <div class="faq-section">
+            <div class="faq-item">
+                <h3>How do I search for weather in a city?</h3>
+                <p>Use the search box on the Dashboard page to enter a city name. Click "Search" to
+                    get current weather and forecast.</p>
+
+            </div>
+            <div class="faq-item">
+                <h3>How do I add a city to Favorites?</h3>
+                <p>After searching a city, click the "Add to Favorites" button on the Dashboard to save it
+                    for quick access later.</p>
+            </div>
+            <div class="faq-item">
+                <h3>How can I view my search history?</h3>
+                <p>Go to the History page to see a list of your recent searched cities and navigate back
+                    to their weather details.</p>
+            </div>
+            <div class="faq-item">
+                <h3>What data sources are used?</h3>
+                <p>We use trusted APIs like OpenWeatherMap to provide accurate weather
+                    updates.</p>
+            </div>
+            <div class="faq-item">
+                <h3>How do I contact support?</h3>
+                <p>Use the Contact button on the About page to email our support team.</p>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

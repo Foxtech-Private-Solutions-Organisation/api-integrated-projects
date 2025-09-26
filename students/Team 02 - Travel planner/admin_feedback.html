@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Feedback</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        padding: 30px;
+    }
+    h2 { text-align: center; color: #333; }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+        padding: 12px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+    th {
+        background-color: #4CAF50;
+        color: white;
+    }
+</style>
+</head>
+<body>
+<h2>User Feedback</h2>
+<table id="feedbackTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Rating</th>
+            <th>Comments</th>
+            <th>Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Feedback rows will go here -->
+    </tbody>
+</table>
+
+<script>
+async function loadFeedback() {
+    try {
+        const res = await fetch('/admin/feedback');
+        const data = await res.json();
+        const tbody = document.querySelector('#feedbackTable tbody');
+        tbody.innerHTML = '';
+        data.forEach((fb, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${fb.rating}</td>
+                <td>${fb.comments}</td>
+                <td>${new Date(fb.timestamp).toLocaleString()}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch(err) {
+        console.error('Failed to load feedback:', err);
+    }
+}
+
+// Load feedback when page opens
+loadFeedback();
+</script>
+</body>
+</html>

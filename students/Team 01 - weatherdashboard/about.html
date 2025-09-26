@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About - Weather App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #ffffff;
+            color: #001f4d;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background:linear-gradient(135deg,#038ae0,#bccae5);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 25px 15px;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-links a {
+            color: #dbe4ff;
+            padding: 10px 12px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: background 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .nav-links a i {
+            margin-right: 10px;
+            width: 18px;
+            text-align: center;
+            color: #dbe4ff;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover i,
+        .nav-links a.active i {
+
+            color: #ffffff;
+        }
+
+        /* Main */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-width: calc(100vw - 220px);
+            margin: 0;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-weight: 700;
+            font-size: 2.5rem;
+            max-width: fit-content;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #324868;
+            max-width: 700px;
+            margin: 20px 0;
+        }
+
+        section {
+            margin-top: 40px;
+        }
+
+        /* Team Section */
+        .team {
+
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .team-member {
+            background: #f8faff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 31, 77, 0.1);
+            padding: 20px;
+            flex: 1 1 250px;
+            text-align: center;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+            cursor: default;
+        }
+
+        .team-member:hover {
+            box-shadow: 0 4px 20px rgba(0, 31, 77, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .team-member img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #001f4d;
+            transition: filter 0.3s ease;
+        }
+
+        .team-member:hover img {
+            filter: drop-shadow(0 0 8px rgba(0, 31, 77, 0.4));
+        }
+
+        .team-member h3 {
+            margin: 0 0 6px;
+            font-weight: 700;
+            color: #001f4d;
+            font-size: 1.2rem;
+        }
+
+        .team-member p.title {
+            font-style: italic;
+            color: #56729a;
+            margin: 0 0 10px;
+        }
+
+        .team-member p.email {
+            font-size: 0.9rem;
+            color: #56729a;
+            margin: 0 0 15px;
+        }
+
+        .contact-button {
+            padding: 10px 24px;
+            background: #001f4d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+
+            user-select: none;
+        }
+
+        .contact-button:hover {
+            background: #003080;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-
+awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+<body>
+    <aside class="sidebar">
+        <h2>Weather</h2>
+        <div class="nav-links">
+            <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="favorites.html"><i class="fas fa-star"></i> Favorites</a>
+            <a href="history.html"><i class="fas fa-history"></i> History</a>
+            <a href="about.html" class="active"><i class="fas fa-info-circle"></i> About</a>
+            <a href="help.html"><i class="fas fa-question-circle"></i> Help</a>
+            <a href="feedback.html"><i class="fas fa-comment"></i> Feedback</a>
+        </div>
+    </aside>
+    <main>
+        <h1>About Our Weather App</h1>
+        <p>Our Weather App provides accurate, easy-to-understand, and real-time weather updates to help you stay prepared for the day. <br>This dashboard is powered by reliable weather APIs and can be customised for multiple locations.<br><b>Key Features:</b>
+        <br>1.Real-time current weather updates.<br>2.Hourly and 7-day forecast.<br>3.Location-based search & unit conversion.<br>4.Severe weather alerts for safety.</p>
+        <section>
+            <h1>Meet the Team</h1>
+            <div class="team">
+
+                <div class="team-member">
+                    <img src="C:\Users\User\Pictures\ceo.jpg" alt="Aaliha" />
+                    <h3>Aaliha</h3>
+                    <p class="title">CEO & Founder</p>
+                    <p class="email">weatherdash123@gmail.com</p>
+                    <button class="contact-button" onclick="contact('weatherdash123@gmail.com')">Contact</button>
+                </div>
+                <div class="team-member">
+                    <img src="C:\Users\User\Pictures\founder.jpg" alt="Aarthi" />
+                    <h3>Aarthi</h3>
+                    <p class="title">Art Director</p>
+                    <p class="email">weatherdash123@gmail.com</p>
+                    <button class="contact-button" onclick="contact('weatherdash123@gmail.com')">Contact</button>
+                </div>
+                <div class="team-member">
+                    <img src="C:\Users\User\Pictures\design.jpg" alt="Abisha" />
+                    <h3>Abisha</h3>
+                    <p class="title">Designer</p>
+                    <p class="email">weatherdash123@gmail.com</p>
+                    <button class="contact-button" onclick="contact('weatherdash123@gmail.com')">Contact</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script>
+        function contact(email) {
+
+            window.location.href = `mailto:${email}`;
+        }
+    </script>
+</body>
+
+</html>
