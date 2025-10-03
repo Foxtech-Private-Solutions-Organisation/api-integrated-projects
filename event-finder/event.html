@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Finder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header {
+      background: #673ab7;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .filters input, .filters select, .filters button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .filters button {
+      background: #673ab7;
+      color: #fff;
+      cursor: pointer;
+    }
+    .filters button:hover {
+      background: #512da8;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .event-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: transform 0.2s;
+      cursor: pointer;
+    }
+    .event-card:hover {
+      transform: scale(1.03);
+    }
+    .event-card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+    .event-card .info {
+      padding: 15px;
+    }
+    .event-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #333;
+    }
+    .event-card p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #666;
+    }
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-content img {
+      width: 100%;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #ff5c5c;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(-10px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎉 Event Finder</h1>
+  </header>
+
+  <div class="container">
+    <!-- Filters -->
+    <div class="filters">
+      <input type="text" id="keyword" placeholder="Search events (e.g. music)">
+      <input type="text" id="city" placeholder="City (optional)">
+      <input type="date" id="startDate">
+      <input type="date" id="endDate">
+      <select id="sort">
+        <option value="date,asc">Sort by Date ↑</option>
+        <option value="date,desc">Sort by Date ↓</option>
+        <option value="relevance,desc">Sort by Relevance</option>
+      </select>
+      <button onclick="searchEvents()">Search</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="eventModal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">×</button>
+      <h2 id="eventTitle"></h2>
+      <img id="eventImage" alt="">
+      <p id="eventDate"></p>
+      <p id="eventLocation"></p>
+      <p id="eventDescription"></p>
+      <a id="eventLink" href="#" target="_blank">View Details</a>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = "0TvoV7Y4hqHq0kiUyfolBnP3OQijbkpk"; // Replace with your key
+
+    async function searchEvents() {
+      const keyword = document.getElementById("keyword").value || "music";
+      const city = document.getElementById("city").value;
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const sort = document.getElementById("sort").value;
+
+      let url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&keyword=${keyword}&sort=${sort}`;
+      if (city) url += `&city=${city}`;
+      if (startDate) url += `&startDateTime=${startDate}T00:00:00Z`;
+      if (endDate) url += `&endDateTime=${endDate}T23:59:59Z`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const events = data._embedded ? data._embedded.events : [];
+        displayEvents(events);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    }
+
+    function displayEvents(events) {
+      const results = document.getElementById("results");
+      results.innerHTML = "";
+      if (events.length === 0) {
+        results.innerHTML = `<p>No events found.</p>`;
+        return;
+      }
+
+      events.forEach(event => {
+        const img = event.images ? event.images[0].url : "";
+        const title = event.name;
+        const date = event.dates.start.localDate || "Date not available";
+        const venue = event._embedded.venues[0].name + ", " + event._embedded.venues[0].city.name;
+
+        const card = document.createElement("div");
+        card.className = "event-card";
+        card.innerHTML = `
+          <img src="${img}" alt="Event">
+          <div class="info">
+            <h3>${title}</h3>
+            <p><strong>${date}</strong></p>
+            <p>${venue}</p>
+          </div>
+        `;
+        card.onclick = () => openModal(title, img, date, venue, event.url);
+        results.appendChild(card);
+      });
+    }
+
+    function openModal(title, img, date, venue, link) {
+      document.getElementById("eventTitle").innerText = title;
+      document.getElementById("eventImage").src = img;
+      document.getElementById("eventDate").innerText = "📅 " + date;
+      document.getElementById("eventLocation").innerText = "📍 " + venue;
+      document.getElementById("eventDescription").innerText = "Exciting event details are available on the official site!";
+      document.getElementById("eventLink").href = link;
+      document.getElementById("eventModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("eventModal").style.display = "none";
+    }
+
+    // Load default
+    searchEvents();
+  </script>
+</body>
+</html>

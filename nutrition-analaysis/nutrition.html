@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrition Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: linear-gradient(135deg, #4facfe, #00f2fe);
+      --secondary: linear-gradient(135deg, #43e97b, #38f9d7);
+      --dark: #222;
+      --light: #fff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: var(--primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--light);
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 28px;
+      background: var(--secondary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    nav button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: #f1f1f1;
+      cursor: pointer;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: 0.3s;
+      margin: 0 5px;
+    }
+
+    nav button.active {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .tab {
+      display: none;
+    }
+
+    .tab.active {
+      display: block;
+    }
+
+    input,
+    select {
+      width: 80%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    button.action {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      background: var(--secondary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-bottom: 10px;
+    }
+
+    button.action:hover {
+      opacity: 0.85;
+    }
+
+    .result {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .nutrition-card {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .nutrition-card h3 {
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .nutrition-list {
+      list-style: none;
+      font-size: 15px;
+    }
+
+    .nutrition-list li {
+      margin: 4px 0;
+      padding: 6px 10px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Nutrition Analysis</h1>
+
+    <nav>
+      <button class="tab-btn active" data-tab="nutrition">Nutrition</button>
+      <button class="tab-btn" data-tab="bmi">BMI Calculator</button>
+      <button class="tab-btn" data-tab="history">History</button>
+    </nav>
+
+    <!-- Nutrition Tab -->
+    <div class="tab active" id="nutrition">
+      <input type="text" id="foodInput" placeholder="Enter food (e.g., Biryani, Pasta)">
+      <button class="action" onclick="getNutrition()">Analyze</button>
+      <div class="result" id="result"></div>
+    </div>
+
+    <!-- BMI Tab -->
+    <div class="tab" id="bmi">
+      <input type="number" id="weight" placeholder="Enter weight (kg)">
+      <input type="number" id="height" placeholder="Enter height (cm)">
+      <button class="action" onclick="calculateBMI()">Calculate BMI</button>
+      <div class="result" id="bmiResult"></div>
+    </div>
+
+    <!-- History Tab -->
+    <div class="tab" id="history">
+      <div class="result" id="historyResult"></div>
+    </div>
+  </div>
+
+  <script>
+    // Tab Switching
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabs = document.querySelectorAll(".tab");
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabButtons.forEach(b => b.classList.remove("active"));
+        tabs.forEach(t => t.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // Nutrition API
+    async function getNutrition() {
+      const food = document.getElementById("foodInput").value;
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "<p>Fetching nutrition data...</p>";
+
+      if (!food) {
+        resultDiv.innerHTML = "<p style='color:red'>Please enter a food item.</p>";
+        return;
+      }
+
+      const url = "https://trackapi.nutritionix.com/v2/natural/nutrients";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-app-id": "4902cab2",   // Replace with your Nutritionix App ID
+            "x-app-key": "6e60326c6412f513b4721ca72e33cea0", // Replace with your Nutritionix API Key
+          },
+          body: JSON.stringify({ query: food })
+        });
+
+        const data = await response.json();
+
+        if (data.foods && data.foods.length > 0) {
+          const foodItem = data.foods[0];
+          const serving = foodItem.serving_weight_grams || 100;
+
+          // Normalize values for 100g
+          const factor = 100 / serving;
+
+          const per100g = {
+            calories: (foodItem.nf_calories * factor).toFixed(2),
+            protein: (foodItem.nf_protein * factor).toFixed(2),
+            carbs: (foodItem.nf_total_carbohydrate * factor).toFixed(2),
+            fat: (foodItem.nf_total_fat * factor).toFixed(2),
+            satFat: (foodItem.nf_saturated_fat * factor).toFixed(2),
+            fiber: (foodItem.nf_dietary_fiber * factor).toFixed(2),
+            sugar: (foodItem.nf_sugars * factor).toFixed(2),
+            sodium: (foodItem.nf_sodium * factor).toFixed(2),
+            cholesterol: (foodItem.nf_cholesterol * factor).toFixed(2),
+            potassium: (foodItem.nf_potassium * factor).toFixed(2),
+          };
+
+          resultDiv.innerHTML = `
+            <div class="nutrition-card">
+              <h3>${foodItem.food_name.toUpperCase()}</h3>
+              <p><strong>Serving Size:</strong> ${serving} g</p>
+              <h4>Per Serving:</h4>
+              <ul class="nutrition-list">
+                <li><strong>Calories:</strong> ${foodItem.nf_calories} kcal</li>
+                <li><strong>Protein:</strong> ${foodItem.nf_protein} g</li>
+                <li><strong>Carbs:</strong> ${foodItem.nf_total_carbohydrate} g</li>
+                <li><strong>Fat:</strong> ${foodItem.nf_total_fat} g</li>
+                <li><strong>Saturated Fat:</strong> ${foodItem.nf_saturated_fat} g</li>
+                <li><strong>Fiber:</strong> ${foodItem.nf_dietary_fiber} g</li>
+                <li><strong>Sugar:</strong> ${foodItem.nf_sugars} g</li>
+                <li><strong>Sodium:</strong> ${foodItem.nf_sodium} mg</li>
+                <li><strong>Cholesterol:</strong> ${foodItem.nf_cholesterol} mg</li>
+                <li><strong>Potassium:</strong> ${foodItem.nf_potassium} mg</li>
+              </ul>
+              <h4>Per 100g:</h4>
+              <ul class="nutrition-list">
+                <li><strong>Calories:</strong> ${per100g.calories} kcal</li>
+                <li><strong>Protein:</strong> ${per100g.protein} g</li>
+                <li><strong>Carbs:</strong> ${per100g.carbs} g</li>
+                <li><strong>Fat:</strong> ${per100g.fat} g</li>
+                <li><strong>Saturated Fat:</strong> ${per100g.satFat} g</li>
+                <li><strong>Fiber:</strong> ${per100g.fiber} g</li>
+                <li><strong>Sugar:</strong> ${per100g.sugar} g</li>
+                <li><strong>Sodium:</strong> ${per100g.sodium} mg</li>
+                <li><strong>Cholesterol:</strong> ${per100g.cholesterol} mg</li>
+                <li><strong>Potassium:</strong> ${per100g.potassium} mg</li>
+              </ul>
+            </div>
+          `;
+
+          saveHistory(foodItem.food_name);
+
+        } else {
+          resultDiv.innerHTML = "<p style='color:red'>No nutrition data found. Try another food.</p>";
+        }
+      } catch (error) {
+        resultDiv.innerHTML = "<p style='color:red'>Error fetching data. Please try again.</p>";
+        console.error(error);
+      }
+    }
+
+    // Save search history
+    function saveHistory(food) {
+      let history = JSON.parse(localStorage.getItem("nutritionHistory")) || [];
+      if (!history.includes(food)) {
+        history.push(food);
+        localStorage.setItem("nutritionHistory", JSON.stringify(history));
+      }
+      loadHistory();
+    }
+
+    // Load history
+    function loadHistory() {
+      let history = JSON.parse(localStorage.getItem("nutritionHistory")) || [];
+      const historyDiv = document.getElementById("historyResult");
+      if (history.length === 0) {
+        historyDiv.innerHTML = "<p>No history found.</p>";
+      } else {
+        historyDiv.innerHTML = "<ul class='nutrition-list'>" + history.map(item => `<li>${item}</li>`).join("") + "</ul>";
+      }
+    }
+    loadHistory();
+
+    // BMI Calculator
+    function calculateBMI() {
+      const weight = parseFloat(document.getElementById("weight").value);
+      const height = parseFloat(document.getElementById("height").value) / 100;
+
+      const resultDiv = document.getElementById("bmiResult");
+
+      if (!weight || !height) {
+        resultDiv.innerHTML = "<p style='color:red'>Please enter valid weight and height.</p>";
+        return;
+      }
+
+      const bmi = (weight / (height * height)).toFixed(2);
+      let status = "";
+      if (bmi < 18.5) status = "Underweight";
+      else if (bmi < 24.9) status = "Normal weight";
+      else if (bmi < 29.9) status = "Overweight";
+      else status = "Obese";
+
+      resultDiv.innerHTML = `<p><strong>BMI:</strong> ${bmi} (${status})</p>`;
+    }
+  </script>
+</body>
+
+</html>

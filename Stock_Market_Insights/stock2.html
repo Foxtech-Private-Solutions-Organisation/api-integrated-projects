@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📈 Stock Market Insights - Yahoo Finance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#0f1724;
+    color:#e6eef6;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    min-height:100vh;
+    padding:20px;
+  }
+  .wrap {
+    width:100%;
+    max-width:900px;
+    background:#1c2538;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.5);
+  }
+  header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+  }
+  h1 { margin:0; font-size:1.3rem; }
+  input,button {
+    padding:10px;
+    border-radius:6px;
+    border:none;
+    font-size:1rem;
+  }
+  input {
+    width:220px;
+    background:#0b1220;
+    color:white;
+  }
+  button {
+    background:#06b6d4;
+    color:#022;
+    font-weight:bold;
+    cursor:pointer;
+    margin-left:5px;
+  }
+  .quote { margin:15px 0; display:none; flex-direction:column; gap:8px; }
+  .price { font-size:1.8rem; font-weight:bold; }
+  .change.up { color:#22c55e; font-weight:bold; }
+  .change.down { color:#ef4444; font-weight:bold; }
+  #chart {
+    margin-top:15px;
+    background:#0b1220;
+    border-radius:10px;
+    padding:10px;
+    height:400px;
+    display:none;
+  }
+  @media(max-width:600px){
+    input { width:100%; margin-bottom:8px; }
+    button { width:100%; margin-left:0; margin-bottom:8px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>📊 Stock Market Insights</h1>
+      <div>Yahoo Finance API</div>
+    </header>
+
+    <div style="display:flex; flex-wrap:wrap; gap:5px;">
+      <input id="symbol" type="text" placeholder="Ticker (e.g. AAPL, MSFT, TSLA)" />
+      <button id="fetchBtn">Search</button>
+    </div>
+
+    <div id="quoteDiv" class="quote">
+      <div><strong>Symbol:</strong> <span id="ticker">--</span></div>
+      <div class="price" id="price">--</div>
+      <div id="change" class="change">--</div>
+      <div id="meta">Open: -- | High: -- | Low: -- | Volume: --</div>
+    </div>
+
+    <canvas id="chart"></canvas>
+  </div>
+
+<script>
+const API_KEY = "YOUR_RAPIDAPI_KEY"; // 🔑 Replace with your RapidAPI key
+const HEADERS = {
+  "x-rapidapi-host": "apidojo-yahoo-finance-v1.p.rapidapi.com",
+  "x-rapidapi-key": API_KEY
+};
+
+let chart;
+
+async function fetchTimeseries(symbol){
+  const url = `https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-timeseries?symbol=${symbol}&region=US`;
+  const res = await fetch(url, { headers: HEADERS });
+  if(!res.ok) throw new Error("Network response not OK: " + res.status);
+  const data = await res.json();
+  return data;
+}
+
+function renderQuote(data){
+  if(!data) return;
+  const symbol = data.meta?.symbol || 'Unknown';
+  const ts = data.timeseries || data.price?.timeseries || [];
+  if(ts.length === 0) return;
+
+  // Latest point
+  const latest = ts[ts.length -1];
+  const price = latest.close ?? 0;
+  const open = latest.open ?? 0;
+  const high = latest.high ?? 0;
+  const low = latest.low ?? 0;
+  const volume = latest.volume ?? 0;
+
+  document.getElementById("ticker").textContent = symbol;
+  document.getElementById("price").textContent = price.toFixed(2);
+
+  const change = price - open;
+  const changePct = open !== 0 ? (change/open*100).toFixed(2) : '0';
+  const changeEl = document.getElementById("change");
+  changeEl.textContent = `${change>=0?"+":""}${change.toFixed(2)} (${changePct}%)`;
+  changeEl.className = "change " + (change>=0 ? "up" : "down");
+
+  document.getElementById("meta").textContent =
+    `Open: ${open} | High: ${high} | Low: ${low} | Volume: ${volume}`;
+
+  document.getElementById("quoteDiv").style.display = 'flex';
+}
+
+function renderChart(data){
+  const ts = data.timeseries || data.price?.timeseries || [];
+  if(ts.length === 0) return;
+
+  const last60 = ts.slice(-60); // last 60 days
+  const labels = last60.map(d => d.date);
+  const prices = last60.map(d => d.close);
+
+  const ctx = document.getElementById("chart").getContext("2d");
+  if(chart) chart.destroy();
+
+  const gradient = ctx.createLinearGradient(0,0,0,400);
+  gradient.addColorStop(0,"rgba(6,182,212,0.4)");
+  gradient.addColorStop(1,"rgba(6,182,212,0)");
+
+  chart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels,
+      datasets:[{
+        label:"Close Price (USD)",
+        data:prices,
+        borderColor:"#06b6d4",
+        backgroundColor:gradient,
+        fill:true,
+        tension:0.3,
+        borderWidth:2,
+        pointRadius:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:"#1c2538",
+          titleColor:"#06b6d4",
+          bodyColor:"#fff",
+          padding:12,
+          callbacks:{
+            label:(ctx)=>` $${ctx.formattedValue}`
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{ maxTicksLimit:8, color:"#aaa" },
+          grid:{ color:"rgba(255,255,255,0.05)" }
+        },
+        y:{
+          ticks:{ color:"#aaa", callback:(v)=>`$${v}` },
+          grid:{ color:"rgba(255,255,255,0.05)" }
+        }
+      },
+      animation:false // disable animation
+    }
+  });
+
+  document.getElementById("chart").style.display = 'block';
+}
+
+document.getElementById("fetchBtn").addEventListener("click", async ()=>{
+  const symbol = document.getElementById("symbol").value.trim();
+  if(!symbol) return alert("Enter a ticker symbol");
+  try {
+    const data = await fetchTimeseries(symbol);
+    if(!data || !data.timeseries){
+      alert("No data found for this symbol");
+      return;
+    }
+    renderQuote(data);
+    renderChart(data);
+  } catch(err){
+    console.error(err);
+    alert("Error fetching data: " + err.message);
+  }
+});
+</script>
+</body>
+</html>

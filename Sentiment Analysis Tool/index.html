@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --positive: #4cc9f0;
+            --negative: #ef476f;
+            --neutral: #ffd166;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #adb5bd;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            color: var(--neutral);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .char-count {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .analyze-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .examples-section {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .examples-section h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .example-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .example-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .example-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .example-sentiment {
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .sentiment-positive {
+            background-color: rgba(76, 201, 240, 0.2);
+            color: var(--positive);
+        }
+
+        .sentiment-negative {
+            background-color: rgba(239, 71, 111, 0.2);
+            color: var(--negative);
+        }
+
+        .sentiment-neutral {
+            background-color: rgba(255, 209, 102, 0.2);
+            color: var(--neutral);
+        }
+
+        .example-text {
+            font-size: 0.95rem;
+            color: var(--dark);
+        }
+
+        .result-section {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: none;
+            grid-column: 1 / -1;
+        }
+
+        .result-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .sentiment-label {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sentiment-icon {
+            font-size: 1.8rem;
+        }
+
+        .positive { color: var(--positive); }
+        .negative { color: var(--negative); }
+        .neutral { color: var(--neutral); }
+
+        .confidence {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-bar {
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .score-positive { background: var(--positive); }
+        .score-negative { background: var(--negative); }
+        .score-neutral { background: var(--neutral); }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .detail-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .detail-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .history-section {
+            grid-column: 1 / -1;
+        }
+
+        .history-section h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            background: white;
+            border-left: 5px solid var(--gray);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item.positive { border-left-color: var(--positive); }
+        .history-item.negative { border-left-color: var(--negative); }
+        .history-item.neutral { border-left-color: var(--neutral); }
+
+        .history-text {
+            flex: 1;
+            margin-right: 15px;
+            font-size: 0.95rem;
+        }
+
+        .history-sentiment {
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Sentiment Analysis Tool</h1>
+            </div>
+            <p class="tagline">Analyze emotions and opinions in text with AI-powered sentiment analysis</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-container">
+                    <textarea id="textInput" placeholder="Enter text to analyze (e.g., product reviews, social media posts, comments)..."></textarea>
+                    <div class="char-count"><span id="charCount">0</span> characters</div>
+                </div>
+                <button class="analyze-btn" id="analyzeBtn">
+                    <i class="fas fa-chart-line"></i> Analyze Sentiment
+                </button>
+            </div>
+
+            <div class="examples-section">
+                <h2><i class="fas fa-lightbulb"></i> Example Texts</h2>
+                <div class="example-cards">
+                    <div class="example-card" data-sentiment="positive">
+                        <div class="example-header">
+                            <div class="example-sentiment sentiment-positive">Positive</div>
+                            <i class="fas fa-smile-beam positive"></i>
+                        </div>
+                        <p class="example-text">"I absolutely love this product! It has completely changed how I work. The quality is exceptional and it was delivered faster than expected."</p>
+                    </div>
+                    <div class="example-card" data-sentiment="negative">
+                        <div class="example-header">
+                            <div class="example-sentiment sentiment-negative">Negative</div>
+                            <i class="fas fa-frown negative"></i>
+                        </div>
+                        <p class="example-text">"This is the worst customer service I've ever experienced. The product arrived damaged and they refused to refund my money. Terrible company!"</p>
+                    </div>
+                    <div class="example-card" data-sentiment="neutral">
+                        <div class="example-header">
+                            <div class="example-sentiment sentiment-neutral">Neutral</div>
+                            <i class="fas fa-meh neutral"></i>
+                        </div>
+                        <p class="example-text">"The package arrived on time. The product seems to be of average quality. It does what it's supposed to do without any exceptional features."</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <div class="sentiment-label">
+                        <i class="sentiment-icon" id="sentimentIcon"></i>
+                        <span id="sentimentText">Sentiment</span>
+                    </div>
+                    <div class="confidence">Confidence: <span id="confidenceValue">85%</span></div>
+                </div>
+                
+                <div class="score-bar">
+                    <div class="score-fill" id="scoreBar"></div>
+                </div>
+                
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <div class="detail-value" id="positiveScore">0%</div>
+                        <div class="detail-label">Positive</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-value" id="neutralScore">0%</div>
+                        <div class="detail-label">Neutral</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-value" id="negativeScore">0%</div>
+                        <div class="detail-label">Negative</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h2><i class="fas fa-history"></i> Analysis History</h2>
+                <ul class="history-list" id="historyList">
+                    <!-- History items will be added here dynamically -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- <footer>
+            <p>Sentiment Analysis Tool - College Mini Project</p>
+            <p>This tool uses simulated sentiment analysis for demonstration purposes</p>
+        </footer> -->
+    </div>
+
+    <script>
+        // DOM elements
+        const textInput = document.getElementById('textInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resultSection = document.getElementById('resultSection');
+        const charCount = document.getElementById('charCount');
+        const sentimentIcon = document.getElementById('sentimentIcon');
+        const sentimentText = document.getElementById('sentimentText');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const scoreBar = document.getElementById('scoreBar');
+        const positiveScore = document.getElementById('positiveScore');
+        const neutralScore = document.getElementById('neutralScore');
+        const negativeScore = document.getElementById('negativeScore');
+        const historyList = document.getElementById('historyList');
+        const exampleCards = document.querySelectorAll('.example-card');
+
+        // Sample analysis history
+        let analysisHistory = [
+            { text: "I absolutely love this product! It's amazing.", sentiment: "positive" },
+            { text: "The service was okay, nothing special.", sentiment: "neutral" },
+            { text: "This is the worst experience I've ever had.", sentiment: "negative" }
+        ];
+
+        // Character count update
+        textInput.addEventListener('input', () => {
+            charCount.textContent = textInput.value.length;
+        });
+
+        // Analyze button click
+        analyzeBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            
+            if (text.length < 10) {
+                alert('Please enter at least 10 characters for analysis');
+                return;
+            }
+            
+            // Simulate API call with timeout
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            
+            setTimeout(() => {
+                const result = analyzeSentiment(text);
+                displayResult(result);
+                addToHistory(text, result.sentiment);
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<i class="fas fa-chart-line"></i> Analyze Sentiment';
+            }, 1500);
+        });
+
+        // Example card click
+        exampleCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const text = card.querySelector('.example-text').textContent;
+                textInput.value = text;
+                charCount.textContent = text.length;
+                
+                // Auto-analyze the example text
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+                
+                setTimeout(() => {
+                    const sentiment = card.getAttribute('data-sentiment');
+                    const result = analyzeExampleSentiment(text, sentiment);
+                    displayResult(result);
+                    addToHistory(text, result.sentiment);
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.innerHTML = '<i class="fas fa-chart-line"></i> Analyze Sentiment';
+                }, 1500);
+            });
+        });
+
+        // Fake sentiment analysis function
+        function analyzeSentiment(text) {
+            // Simple algorithm to determine sentiment
+            const positiveWords = ['love', 'like', 'great', 'awesome', 'amazing', 'good', 'excellent', 'fantastic', 'wonderful', 'best', 'happy', 'pleased', 'perfect', 'outstanding', 'superb'];
+            const negativeWords = ['hate', 'dislike', 'terrible', 'awful', 'bad', 'horrible', 'worst', 'boring', 'disappointing', 'poor', 'angry', 'upset', 'frustrated', 'annoying', 'waste'];
+            
+            let positiveCount = 0;
+            let negativeCount = 0;
+            
+            const words = text.toLowerCase().split(/\s+/);
+            
+            words.forEach(word => {
+                if (positiveWords.includes(word)) positiveCount++;
+                if (negativeWords.includes(word)) negativeCount++;
+            });
+            
+            // Determine sentiment based on word counts
+            if (positiveCount > negativeCount) {
+                return {
+                    sentiment: 'positive',
+                    confidence: Math.min(95, 70 + (positiveCount * 5)),
+                    scores: {
+                        positive: Math.min(95, 70 + (positiveCount * 5)),
+                        neutral: Math.max(5, 25 - (positiveCount * 3)),
+                        negative: Math.max(0, 5 - (positiveCount * 2))
+                    }
+                };
+            } else if (negativeCount > positiveCount) {
+                return {
+                    sentiment: 'negative',
+                    confidence: Math.min(95, 70 + (negativeCount * 5)),
+                    scores: {
+                        positive: Math.max(0, 5 - (negativeCount * 2)),
+                        neutral: Math.max(5, 25 - (negativeCount * 3)),
+                        negative: Math.min(95, 70 + (negativeCount * 5))
+                    }
+                };
+            } else {
+                return {
+                    sentiment: 'neutral',
+                    confidence: 75,
+                    scores: {
+                        positive: 25,
+                        neutral: 50,
+                        negative: 25
+                    }
+                };
+            }
+        }
+
+        // Analyze example sentiment (predefined for examples)
+        function analyzeExampleSentiment(text, sentiment) {
+            if (sentiment === 'positive') {
+                return {
+                    sentiment: 'positive',
+                    confidence: 92,
+                    scores: {
+                        positive: 85,
+                        neutral: 10,
+                        negative: 5
+                    }
+                };
+            } else if (sentiment === 'negative') {
+                return {
+                    sentiment: 'negative',
+                    confidence: 88,
+                    scores: {
+                        positive: 8,
+                        neutral: 12,
+                        negative: 80
+                    }
+                };
+            } else {
+                return {
+                    sentiment: 'neutral',
+                    confidence: 76,
+                    scores: {
+                        positive: 20,
+                        neutral: 60,
+                        negative: 20
+                    }
+                };
+            }
+        }
+
+        // Display result function
+        function displayResult(result) {
+            // Update sentiment text and icon
+            sentimentText.textContent = result.sentiment.charAt(0).toUpperCase() + result.sentiment.slice(1);
+            confidenceValue.textContent = `${result.confidence}%`;
+            
+            // Update scores
+            positiveScore.textContent = `${result.scores.positive}%`;
+            neutralScore.textContent = `${result.scores.neutral}%`;
+            negativeScore.textContent = `${result.scores.negative}%`;
+            
+            // Update score bar
+            scoreBar.className = 'score-fill';
+            if (result.sentiment === 'positive') {
+                scoreBar.classList.add('score-positive');
+                sentimentIcon.className = 'sentiment-icon fas fa-smile-beam positive';
+            } else if (result.sentiment === 'negative') {
+                scoreBar.classList.add('score-negative');
+                sentimentIcon.className = 'sentiment-icon fas fa-frown negative';
+            } else {
+                scoreBar.classList.add('score-neutral');
+                sentimentIcon.className = 'sentiment-icon fas fa-meh neutral';
+            }
+            
+            // Animate score bar
+            setTimeout(() => {
+                if (result.sentiment === 'positive') {
+                    scoreBar.style.width = `${result.scores.positive}%`;
+                } else if (result.sentiment === 'negative') {
+                    scoreBar.style.width = `${result.scores.negative}%`;
+                } else {
+                    scoreBar.style.width = `${result.scores.neutral}%`;
+                }
+            }, 100);
+            
+            // Show result section
+            resultSection.classList.add('active');
+            
+            // Scroll to results
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Add to history function
+        function addToHistory(text, sentiment) {
+            // Add to beginning of history array
+            analysisHistory.unshift({ text, sentiment });
+            
+            // Keep only last 5 items
+            if (analysisHistory.length > 5) {
+                analysisHistory.pop();
+            }
+            
+            // Update history display
+            updateHistoryDisplay();
+        }
+
+        // Update history display
+        function updateHistoryDisplay() {
+            historyList.innerHTML = '';
+            
+            analysisHistory.forEach(item => {
+                const li = document.createElement('li');
+                li.className = `history-item ${item.sentiment}`;
+                
+                // Shorten text for display
+                const shortText = item.text.length > 80 ? item.text.substring(0, 80) + '...' : item.text;
+                
+                li.innerHTML = `
+                    <div class="history-text">${shortText}</div>
+                    <div class="history-sentiment ${item.sentiment}">
+                        ${item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1)}
+                    </div>
+                `;
+                
+                historyList.appendChild(li);
+            });
+        }
+
+        // Initialize history display
+        updateHistoryDisplay();
+    </script>
+</body>
+</html>

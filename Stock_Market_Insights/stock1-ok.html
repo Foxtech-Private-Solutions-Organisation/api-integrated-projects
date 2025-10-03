@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>📈 Stock Market Insights - Alpha Vantage</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    body {
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:#0f1724;
+      color:#e6eef6;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      padding:20px;
+    }
+    .wrap {
+      width:100%;
+      max-width:900px;
+      background:#1c2538;
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 6px 20px rgba(0,0,0,0.5);
+    }
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:15px;
+    }
+    h1 { margin:0; font-size:1.3rem; }
+    input,button {
+      padding:10px;
+      border-radius:6px;
+      border:none;
+    }
+    input {
+      width:200px;
+      background:#0b1220;
+      color:white;
+    }
+    button {
+      background:#06b6d4;
+      color:#022;
+      font-weight:bold;
+      cursor:pointer;
+    }
+    .quote { margin:15px 0; }
+    .price { font-size:1.8rem; font-weight:bold; }
+    .change.up { color:#22c55e }
+    .change.down { color:#ef4444 }
+    canvas { margin-top:15px; background:#0b1220; border-radius:10px; padding:10px }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>📊 Stock Market Insights</h1>
+      <div>Alpha Vantage API</div>
+    </header>
+
+    <div>
+      <input id="symbol" type="text" placeholder="Ticker (AAPL, MSFT, TSLA)" value="AAPL" />
+      <button id="fetchBtn">Fetch</button>
+    </div>
+
+    <div class="quote">
+      <div id="ticker">--</div>
+      <div class="price" id="price">--</div>
+      <div id="change" class="change">--</div>
+      <div id="meta">Open: -- | High: -- | Low: -- | Volume: --</div>
+    </div>
+
+    <canvas id="chart"></canvas>
+  </div>
+
+<script>
+const API_KEY = "1GL8GIW79C3FVROP";  // 🔑 Replace with your key
+
+async function fetchQuote(symbol){
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data["Global Quote"];
+}
+
+async function fetchHistory(symbol){
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data["Time Series (Daily)"];
+}
+
+function renderQuote(q){
+  document.getElementById("ticker").textContent = q["01. symbol"];
+  document.getElementById("price").textContent = parseFloat(q["05. price"]).toFixed(2);
+  let change = parseFloat(q["09. change"]);
+  let changePct = q["10. change percent"];
+  let changeEl = document.getElementById("change");
+  changeEl.textContent = `${change>0?"+":""}${change} (${changePct})`;
+  changeEl.className = "change " + (change>=0 ? "up" : "down");
+  document.getElementById("meta").textContent =
+    `Open: ${q["02. open"]} | High: ${q["03. high"]} | Low: ${q["04. low"]} | Volume: ${q["06. volume"]}`;
+}
+
+let chart;
+function renderChart(history){
+  const labels = Object.keys(history).slice(0,30).reverse(); // last 30 days
+  const prices = labels.map(d => parseFloat(history[d]["4. close"]));
+  const ctx = document.getElementById("chart").getContext("2d");
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels,
+      datasets:[{
+        label:"Close Price",
+        data:prices,
+        borderColor:"#06b6d4",
+        fill:true,
+        tension:0.2
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ display:false }},
+      scales:{ x:{ ticks:{ maxTicksLimit:8 }}}
+    }
+  });
+}
+
+async function load(symbol){
+  const q = await fetchQuote(symbol);
+  if(!q) { alert("No data found"); return; }
+  renderQuote(q);
+  const h = await fetchHistory(symbol);
+  renderChart(h);
+}
+
+document.getElementById("fetchBtn").addEventListener("click",()=>{
+  load(document.getElementById("symbol").value);
+});
+
+window.addEventListener("load",()=>load("AAPL"));
+</script>
+</body>
+</html>

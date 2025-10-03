@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏋️ Fitness & Calorie Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f7fc;
+      color: #333;
+      transition: 0.3s;
+    }
+
+    body.dark {
+      background: #121212;
+      color: #eee;
+    }
+
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 8px;
+      margin: 5px 2px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .box {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 15px;
+    }
+
+    body.dark .box {
+      background: #1e1e1e;
+      color: #ddd;
+    }
+
+    .exercise-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .exercise-item button {
+      padding: 3px 6px;
+      font-size: 12px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      max-width: 90%;
+      position: relative;
+    }
+
+    .close-btn {
+      float: right;
+      cursor: pointer;
+      font-size: 18px;
+      color: red;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .theme-toggle {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #333;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 5px;
+    }
+
+    body.dark .theme-toggle {
+      background: #eee;
+      color: #333;
+    }
+
+    .goal-input {
+      width: 80px;
+    }
+
+    .high-calorie {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🏋️ Fitness & Calorie Tracker</h1>
+    <div>
+      <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+      <button onclick="exportCSV()">📥 Export CSV</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left -->
+    <div>
+      <!-- Search Exercises -->
+      <div class="box">
+        <h2>Search Exercises</h2>
+        <input type="text" id="searchName" placeholder="Search by name">
+        <button onclick="searchExercises()">Search</button>
+        <div id="exerciseList"></div>
+      </div>
+
+      <!-- Nutrition Tracker -->
+      <div class="box">
+        <h2>🥗 Nutrition Tracker</h2>
+        <input type="text" id="foodInput" placeholder="e.g. 2 eggs">
+        <button onclick="searchFood()">Add Food</button>
+        <ul id="nutritionList"></ul>
+      </div>
+
+      <!-- Daily Calorie Goal -->
+      <div class="box">
+        <h2>Set Daily Calorie Goal</h2>
+        <input type="number" id="calorieGoal" class="goal-input" placeholder="e.g. 2000">
+        <button onclick="setGoal()">Set Goal</button>
+        <p id="goalInfo">Goal not set</p>
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div>
+      <div class="box">
+        <h2>Calorie Balance</h2>
+        <p id="balanceInfo">Consumed: 0 | Burned: 0 | Balance: 0</p>
+        <p id="goalProgress"></p>
+      </div>
+      <div class="box">
+        <h2>Progress</h2>
+        <canvas id="progressChart"></canvas>
+      </div>
+      <div class="box">
+        <h2>History</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Consumed</th>
+              <th>Burned</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="exerciseModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h3 id="modalTitle"></h3>
+      <p><b>Type:</b> <span id="modalType"></span></p>
+      <p><b>Difficulty:</b> <span id="modalDifficulty"></span></p>
+      <p><b>Equipment:</b> <span id="modalEquipment"></span></p>
+      <p><b>Instructions:</b></p>
+      <p id="modalInstructions"></p>
+      <button id="burnButton">🔥 Log Burn</button>
+      <button id="favoriteBtn">⭐ Add to Favorites</button>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "kP3/EEEo1qDxMV8X/wxUyw==3QyQTyjA3jSZrceD";
+    const BASE_URL = "https://api.api-ninjas.com/v1/exercises";
+    const NUTRITION_URL = "https://trackapi.nutritionix.com/v2/natural/nutrients";
+    const NUTRITION_HEADERS = {
+      "Content-Type": "application/json",
+      "x-app-id": "4902cab2",
+      "x-app-key": "6e60326c6412f513b4721ca72e33cea0"
+    };
+
+    let history = JSON.parse(localStorage.getItem("history")) || [];
+    let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    let calorieGoal = localStorage.getItem("calorieGoal") || null;
+    let chart;
+
+    // ---- Search Exercises ----
+    function searchExercises() {
+      const name = document.getElementById("searchName").value;
+      if (!name) return alert("Type a name!");
+      fetch(`${BASE_URL}?name=${name}`, { headers: { "X-Api-Key": API_KEY } })
+        .then(res => res.json())
+        .then(data => displayExercises(data))
+        .catch(() => document.getElementById("exerciseList").innerHTML = "<p>Error fetching.</p>");
+    }
+
+    function displayExercises(exercises) {
+      const list = document.getElementById("exerciseList");
+      list.innerHTML = "";
+      if (!exercises.length) { list.innerHTML = "<p>No results</p>"; return; }
+      exercises.forEach(ex => {
+        const div = document.createElement("div");
+        div.className = "exercise-item";
+        const encoded = encodeURIComponent(JSON.stringify(ex));
+        const favText = favorites.some(f => f.name === ex.name) ? "★" : "☆";
+        div.innerHTML = `<h4>${ex.name}</h4>
+      <button onclick='viewDetails("${encoded}")'>View</button>
+      <span>${favText}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    function viewDetails(encoded) {
+      const ex = JSON.parse(decodeURIComponent(encoded));
+      document.getElementById("modalTitle").innerText = ex.name;
+      document.getElementById("modalType").innerText = ex.type;
+      document.getElementById("modalDifficulty").innerText = ex.difficulty;
+      document.getElementById("modalEquipment").innerText = ex.equipment || "None";
+      document.getElementById("modalInstructions").innerText = ex.instructions || "No instructions";
+      document.getElementById("exerciseModal").style.display = "flex";
+      document.getElementById("burnButton").onclick = () => logBurn(ex.type);
+      document.getElementById("favoriteBtn").onclick = () => toggleFavorite(ex);
+    }
+
+    function closeModal() { document.getElementById("exerciseModal").style.display = "none"; }
+
+    // ---- Calories ----
+    function estimateCalories(type) { const base = { Strength: 120, Cardio: 150, Flexibility: 80 }; return base[type] || 100; }
+    function logBurn(type) { const calories = estimateCalories(type); logCalories(0, calories); closeModal(); }
+
+    // ---- Nutrition ----
+    function searchFood() {
+      const query = document.getElementById("foodInput").value;
+      if (!query) return;
+      fetch(NUTRITION_URL, { method: "POST", headers: NUTRITION_HEADERS, body: JSON.stringify({ query }) })
+        .then(res => res.json())
+        .then(data => {
+          const ul = document.getElementById("nutritionList");
+          data.foods.forEach(f => {
+            const high = f.nf_calories > 500 ? "high-calorie" : "";
+            ul.innerHTML += `<li class="${high}">${f.food_name}: ${f.nf_calories} cal</li>`;
+            logCalories(f.nf_calories, 0);
+          });
+        })
+        .catch(() => alert("Nutrition API error"));
+    }
+
+    // ---- Logging ----
+    function logCalories(consumed, burned) {
+      const today = new Date().toISOString().split("T")[0];
+      let entry = history.find(h => h.date === today);
+      if (entry) { entry.consumed += consumed; entry.burned += burned; }
+      else { history.push({ date: today, consumed, burned }); }
+      localStorage.setItem("history", JSON.stringify(history));
+      updateUI();
+    }
+
+    function updateUI() {
+      const today = new Date().toISOString().split("T")[0];
+      const entry = history.find(h => h.date === today) || { consumed: 0, burned: 0 };
+      const balance = entry.consumed - entry.burned;
+      document.getElementById("balanceInfo").innerText = `Consumed: ${entry.consumed} | Burned: ${entry.burned} | Balance: ${balance}`;
+      if (calorieGoal) {
+        document.getElementById("goalInfo").innerText = `Daily Goal: ${calorieGoal} cal`;
+        const percent = Math.min(100, Math.round((entry.consumed / parseInt(calorieGoal)) * 100));
+        document.getElementById("goalProgress").innerText = `Goal Progress: ${percent}%`;
+      }
+      updateHistoryTable();
+      updateProgressChart();
+    }
+
+    function updateHistoryTable() {
+      const tb = document.getElementById("historyTable"); tb.innerHTML = "";
+      history.forEach(h => {
+        const balance = h.consumed - h.burned;
+        tb.innerHTML += `<tr><td>${h.date}</td><td>${h.consumed || 0}</td><td>${h.burned || 0}</td><td>${balance}</td></tr>`;
+      });
+    }
+
+    function updateProgressChart() {
+      const ctx = document.getElementById("progressChart").getContext("2d");
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: "line", data: {
+          labels: history.map(h => h.date),
+          datasets: [{
+            label: "Net Calories", data: history.map(h => (h.consumed - h.burned)),
+            borderColor: "#4CAF50", backgroundColor: "rgba(76,175,80,0.2)"
+          }]
+        }
+      });
+    }
+
+    // ---- Favorites ----
+    function toggleFavorite(ex) {
+      const index = favorites.findIndex(f => f.name === ex.name);
+      if (index >= 0) favorites.splice(index, 1);
+      else favorites.push(ex);
+      localStorage.setItem("favorites", JSON.stringify(favorites));
+      alert(index >= 0 ? "Removed from favorites" : "Added to favorites");
+      displayExercises([]);
+    }
+
+    // ---- Daily Goal ----
+    function setGoal() {
+      calorieGoal = document.getElementById("calorieGoal").value;
+      localStorage.setItem("calorieGoal", calorieGoal);
+      updateUI();
+    }
+
+    // ---- Theme ----
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+    }
+    if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark");
+
+    // ---- Export CSV ----
+    function exportCSV() {
+      let csv = "Date,Consumed,Burned,Balance\n";
+      history.forEach(h => { csv += `${h.date},${h.consumed},${h.burned},${h.consumed - h.burned}\n`; });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob); link.download = "fitness_history.csv"; link.click();
+    }
+
+    // Init
+    updateUI();
+  </script>
+</body>
+
+</html>

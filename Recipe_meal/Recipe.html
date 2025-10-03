@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recipe Meal Planner + Grocery List</title>
+  <style>
+    :root {
+      --accent: #e75b1e;
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      background: var(--bg);
+      color: #111
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 18px 20px;
+      background: linear-gradient(90deg, #fff 0%, #fff0 60%);
+      position: sticky;
+      top: 0;
+      z-index: 10
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 0 16px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 18px
+    }
+
+    /* Left: search & planner */
+    .left {
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .search-card,
+    .planner-card,
+    .details-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 4px 18px rgba(16, 24, 40, 0.06)
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px
+    }
+
+    input[type="search"] {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #e6e6ee
+    }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 12px
+    }
+
+    .meal {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid #f0f0f5
+    }
+
+    .meal img {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover
+    }
+
+    .meal .meta {
+      flex: 1
+    }
+
+    .meal .meta h4 {
+      margin: 0;
+      font-size: 14px
+    }
+
+    .meal .meta p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .add-btn {
+      background: #0ea5a2;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 0;
+      cursor: pointer
+    }
+
+    /* Planner grid */
+    .planner-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px
+    }
+
+    .day {
+      min-height: 100px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px dashed #eceff6;
+      background: linear-gradient(180deg, #fff, #fbfbff)
+    }
+
+    .day h5 {
+      margin: 0 0 8px;
+      font-size: 13px
+    }
+
+    .slot {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px;
+      background: #fff;
+      border-radius: 8px;
+      margin-bottom: 6px
+    }
+
+    .slot img {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover
+    }
+
+    .slot .title {
+      flex: 1;
+      font-size: 13px
+    }
+
+    .slot button {
+      background: transparent;
+      border: 0;
+      color: #ef4444;
+      font-weight: 600;
+      cursor: pointer
+    }
+
+    /* Right column */
+    .grocery-list {
+      max-height: 60vh;
+      overflow: auto
+    }
+
+    .grocery-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px dashed #f0f0f5
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px
+    }
+
+    .small {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    footer {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    @media (max-width:900px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+
+      .planner-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media (max-width:520px) {
+      .planner-grid {
+        grid-template-columns: repeat(1, 1fr)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🍳 Recipe Meal Planner + Grocery List</h1>
+    <div style="flex:1"></div>
+    <div class="small">Uses TheMealDB public API</div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <div class="left">
+        <div class="search-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>Search recipes</strong>
+            <span class="small">Free public API</span>
+          </div>
+          <div class="search-row" style="margin-top:10px">
+            <input id="q" type="search" placeholder="Search by name or ingredient (eg: Chicken, Pasta)" />
+            <button id="searchBtn">Search</button>
+          </div>
+          <div id="results" class="results" style="margin-top:12px">Type & click search to see results</div>
+        </div>
+
+        <div class="planner-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>Weekly planner</strong>
+            <div class="small">Drag or click + to add</div>
+          </div>
+          <div style="margin-top:12px;font-size:13px;color:var(--muted)">Click a recipe's "Add" button and choose a day
+            & meal type.</div>
+
+          <div style="margin-top:12px;overflow:auto">
+            <div class="planner-grid" id="planner">
+              <!-- days injected -->
+            </div>
+          </div>
+          <div class="controls">
+            <button id="clearPlanner" style="background:#ef4444">Clear planner</button>
+            <button id="savePlanner">Save planner</button>
+            <div style="flex:1"></div>
+            <button id="exportGrocery">Export Grocery</button>
+          </div>
+        </div>
+
+        <div class="details-card" id="recipeDetails" style="display:none"></div>
+      </div>
+
+      <aside>
+        <div class="search-card">
+          <strong>Grocery list</strong>
+          <div class="small" style="margin-top:6px">Aggregated from recipes in your planner</div>
+          <div class="grocery-list" id="grocery"></div>
+          <div class="controls">
+            <button id="clearGrocery">Clear</button>
+            <button id="downloadGrocery">Download</button>
+          </div>
+        </div>
+
+        <div class="search-card" style="margin-top:12px">
+          <strong>Tips</strong>
+          <ul style="margin:8px 0 0 18px;color:var(--muted);font-size:13px">
+            <li>Search by ingredient to plan meals around what you have.</li>
+            <li>Click a meal in the planner to view details and ingredients.</li>
+            <li>Saved planner persists in your browser (localStorage).</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Built with HTML/CSS/JS • TheMealDB API</footer>
+  </main>
+
+  <script>
+    // Simple Meal Planner using TheMealDB (https://www.themealdb.com)
+    // Features:
+    // - search recipes by name/ingredient
+    // - add recipe to a day (Mon..Sun)
+    // - view recipe details
+    // - aggregated grocery list from all planned recipes
+    // - save/load planner to localStorage
+
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const plannerEl = document.getElementById('planner');
+    const resultsEl = document.getElementById('results');
+    const qEl = document.getElementById('q');
+    const searchBtn = document.getElementById('searchBtn');
+    const recipeDetails = document.getElementById('recipeDetails');
+    const groceryEl = document.getElementById('grocery');
+
+    // State
+    let planner = {}; // day -> [meal objects]
+    let savedRecipesCache = {}; // id -> recipe object
+
+    function initPlanner() {
+      DAYS.forEach(d => planner[d] = []);
+      // try load
+      const saved = localStorage.getItem('mealPlanner_v1');
+      if (saved) {
+        try { const data = JSON.parse(saved); planner = data; }
+        catch (e) { console.warn('bad saved planner', e); }
+      }
+      renderPlanner();
+      rebuildGrocery();
+    }
+
+    function renderPlanner() {
+      plannerEl.innerHTML = '';
+      DAYS.forEach(day => {
+        const dayBox = document.createElement('div');
+        dayBox.className = 'day';
+        const h = document.createElement('h5'); h.textContent = day; dayBox.appendChild(h);
+        planner[day].forEach(slot => {
+          const s = document.createElement('div'); s.className = 'slot';
+          s.dataset.id = slot.id;
+          const img = document.createElement('img'); img.src = slot.thumb;
+          const title = document.createElement('div'); title.className = 'title'; title.textContent = slot.name;
+          const del = document.createElement('button'); del.textContent = '✖';
+          del.addEventListener('click', () => { removeFromPlanner(day, slot.id); });
+          s.appendChild(img); s.appendChild(title); s.appendChild(del);
+          s.addEventListener('click', () => { showDetails(slot.id); });
+          dayBox.appendChild(s);
+        })
+        plannerEl.appendChild(dayBox);
+      })
+    }
+
+    function removeFromPlanner(day, id) {
+      planner[day] = planner[day].filter(r => r.id !== id);
+      renderPlanner(); rebuildGrocery(); savePlannerToStorage();
+    }
+
+    function savePlannerToStorage() {
+      localStorage.setItem('mealPlanner_v1', JSON.stringify(planner));
+    }
+
+    // Search TheMealDB: search by name OR by ingredient
+    async function searchMeals(q) {
+      resultsEl.innerHTML = 'Searching...';
+      q = q.trim(); if (!q) { resultsEl.innerHTML = 'Type a query'; return }
+      // First try search by name
+      try {
+        let res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(q)}`);
+        let data = await res.json();
+        if (data && data.meals) { renderResults(data.meals); return }
+        // fallback: filter by ingredient
+        res = await fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(q)}`);
+        data = await res.json();
+        if (data && data.meals) {
+          // filter returns limited meal info (id, name, thumb). show add option and fetch full details on demand.
+          renderResults(data.meals, true);
+          return;
+        }
+        resultsEl.innerHTML = 'No results';
+      } catch (e) { console.error(e); resultsEl.innerHTML = 'Error fetching'; }
+    }
+
+    function renderResults(meals, limited = false) {
+      resultsEl.innerHTML = '';
+      meals.forEach(m => {
+        const div = document.createElement('div'); div.className = 'meal';
+        const img = document.createElement('img'); img.src = m.strMealThumb || m.thumbnail;
+        const meta = document.createElement('div'); meta.className = 'meta';
+        const h4 = document.createElement('h4'); h4.textContent = m.strMeal || m.strMeal;
+        const p = document.createElement('p'); p.textContent = limited ? 'Click add to fetch details' : (m.strCategory || '');
+        const add = document.createElement('button'); add.className = 'add-btn'; add.textContent = '+ Add';
+        add.addEventListener('click', async () => {
+          const full = limited ? await fetchMealById(m.idMeal) : m;
+          promptAddToDay(full);
+        });
+        meta.appendChild(h4); meta.appendChild(p);
+        div.appendChild(img); div.appendChild(meta); div.appendChild(add);
+        resultsEl.appendChild(div);
+      })
+    }
+
+    async function fetchMealById(id) {
+      if (savedRecipesCache[id]) return savedRecipesCache[id];
+      const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`);
+      const data = await res.json();
+      if (data && data.meals && data.meals[0]) {
+        savedRecipesCache[id] = data.meals[0];
+        return data.meals[0];
+      }
+      return null;
+    }
+
+    function promptAddToDay(meal) {
+      // simple prompt flow to choose day
+      const day = prompt('Add to which day? (Mon,Tue,Wed,Thu,Fri,Sat,Sun)', 'Mon');
+      if (!day) return;
+      const D = day.trim().slice(0, 3);
+      if (!DAYS.includes(D)) { alert('Invalid day short name. Use Mon,Tue,...'); return }
+      // store minimal info
+      const entry = { id: meal.idMeal, name: meal.strMeal, thumb: meal.strMealThumb };
+      planner[D].push(entry);
+      savedRecipesCache[meal.idMeal] = meal; // cache full
+      renderPlanner(); rebuildGrocery(); savePlannerToStorage();
+    }
+
+    function showDetails(id) {
+      const r = savedRecipesCache[id];
+      if (!r) { fetchMealById(id).then(showDetails); return }
+      recipeDetails.style.display = 'block';
+      recipeDetails.innerHTML = '';
+      const h = document.createElement('h3'); h.textContent = r.strMeal;
+      const img = document.createElement('img'); img.src = r.strMealThumb; img.style.width = '100%'; img.style.borderRadius = '10px';
+      const cat = document.createElement('div'); cat.className = 'small'; cat.textContent = `${r.strCategory || ''} • ${r.strArea || ''}`;
+      const ing = document.createElement('div'); ing.style.marginTop = '10px'; const ul = document.createElement('ul');
+      const ingredients = extractIngredients(r);
+      ingredients.forEach(i => { const li = document.createElement('li'); li.textContent = i; ul.appendChild(li); });
+      ing.appendChild(ul);
+      const inst = document.createElement('div'); inst.style.marginTop = '10px'; inst.innerHTML = `<strong>Instructions</strong><p style="white-space:pre-wrap">${r.strInstructions || ''}</p>`;
+      recipeDetails.appendChild(h); recipeDetails.appendChild(cat); recipeDetails.appendChild(img); recipeDetails.appendChild(ing); recipeDetails.appendChild(inst);
+    }
+
+    function extractIngredients(meal) {
+      const list = [];
+      for (let i = 1; i <= 20; i++) {
+        const ig = meal[`strIngredient${i}`];
+        const ms = meal[`strMeasure${i}`];
+        if (ig && ig.trim()) {
+          list.push(((ms || '').trim() + ' ' + ig.trim()).trim());
+        }
+      }
+      return list;
+    }
+
+    // Grocery: aggregate from planner
+    function rebuildGrocery() {
+      const map = new Map();
+      Object.values(planner).flat().forEach(async entry => {
+        const full = savedRecipesCache[entry.id];
+        if (full) { aggregateIngredients(full, map); renderGrocery(map); }
+        else { fetchMealById(entry.id).then(f => { if (f) { aggregateIngredients(f, map); renderGrocery(map); } }); }
+      });
+      // If planner empty render empty
+      if (Object.values(planner).flat().length === 0) renderGrocery(map);
+    }
+
+    function aggregateIngredients(meal, map) {
+      const ingr = extractIngredients(meal);
+      ingr.forEach(item => {
+        // Simple normalization: lowercase and remove multiple spaces
+        const key = item.toLowerCase();
+        if (map.has(key)) map.set(key, map.get(key) + 1);
+        else map.set(key, 1);
+      });
+    }
+
+    function renderGrocery(map) {
+      groceryEl.innerHTML = '';
+      if (map.size === 0) { groceryEl.innerHTML = '<div class="small">No items yet. Add meals to the planner to build a grocery list.</div>'; return }
+      for (const [item, count] of map.entries()) {
+        const d = document.createElement('div'); d.className = 'grocery-item';
+        const left = document.createElement('div'); left.textContent = item;
+        const right = document.createElement('div'); right.textContent = `x${count}`;
+        d.appendChild(left); d.appendChild(right);
+        groceryEl.appendChild(d);
+      }
+    }
+
+    // Buttons
+    searchBtn.addEventListener('click', () => searchMeals(qEl.value));
+    qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchMeals(qEl.value); });
+
+    document.getElementById('clearPlanner').addEventListener('click', () => {
+      if (confirm('Clear planner?')) { DAYS.forEach(d => planner[d] = []); renderPlanner(); rebuildGrocery(); savePlannerToStorage(); }
+    });
+
+    document.getElementById('savePlanner').addEventListener('click', () => { savePlannerToStorage(); alert('Planner saved locally'); });
+
+    document.getElementById('clearGrocery').addEventListener('click', () => { if (confirm('Clear grocery (does not remove planner)?')) { groceryEl.innerHTML = ''; } });
+
+    document.getElementById('downloadGrocery').addEventListener('click', () => {
+      // create aggregated text
+      const items = Array.from(document.querySelectorAll('.grocery-item')).map(el => el.innerText.replace('\t', ' - '));
+      const blob = new Blob([items.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'grocery-list.txt'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('exportGrocery').addEventListener('click', () => {
+      // copy to clipboard
+      const items = Array.from(document.querySelectorAll('.grocery-item')).map(el => el.innerText.replace('\t', ' - '));
+      const text = items.join('\n') || 'No items';
+      navigator.clipboard.writeText(text).then(() => alert('Grocery copied to clipboard'));
+    });
+
+    // init
+    initPlanner();
+  </script>
+</body>
+
+</html>

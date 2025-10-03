@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Marvel/DC Comics Character Explorer</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#fff; --text:#111; --muted:#555; --accent:#e02424;
+  }
+  [data-theme="dark"]{ --bg:#0f1720; --card:#0b1220; --text:#e6eef6; --muted:#9fb0c8; --accent:#ff6b6b; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);min-height:100vh}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(90deg,var(--card),transparent);position:sticky;top:0;z-index:4}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#ff8a00);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+  h1{font-size:16px;margin:0}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input[type="search"]{padding:8px 10px;border-radius:8px;border:1px solid #ddd;min-width:180px}
+  select, button{padding:8px 10px;border-radius:8px;border:1px solid #ddd;background:var(--card);cursor:pointer}
+  .top-actions{display:flex;gap:8px;align-items:center}
+  main{padding:16px;max-width:1200px;margin:0 auto}
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .card{background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);overflow:hidden;padding:8px;display:flex;flex-direction:column;align-items:stretch}
+  .thumb{height:160px;background:#eef2f6;background-size:cover;background-position:center;border-radius:8px}
+  .card h3{margin:8px 0 4px;font-size:15px}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .card .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .btn-small{padding:6px 8px;font-size:13px;border-radius:8px}
+  .fav{background:transparent;border:0;cursor:pointer;font-size:18px}
+  .modal{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.6),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center;padding:20px;z-index:20;visibility:hidden;opacity:0;transition:.18s}
+  .modal.open{visibility:visible;opacity:1}
+  .sheet{width:100%;max-width:960px;background:var(--card);border-radius:12px;overflow:auto;max-height:90vh;padding:16px}
+  .sheet .head{display:flex;gap:14px}
+  .sheet img{width:220px;height:320px;object-fit:cover;border-radius:8px}
+  .stats{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .stat{font-size:13px}
+  .bar{height:8px;border-radius:4px;background:#ddd;overflow:hidden}
+  .bar span{display:block;height:100%;background:var(--accent)}
+  .loader{display:flex;align-items:center;gap:10px}
+  .small{font-size:13px;color:var(--muted)}
+  footer{padding:20px;text-align:center;color:var(--muted)}
+  .compare-box{position:fixed;bottom:10px;right:10px;background:var(--card);padding:10px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.2);z-index:30}
+  @media (max-width:640px){ .sheet .head{flex-direction:column;align-items:center} .sheet img{width:80%;height:auto} }
+</style>
+</head>
+<body data-theme="light">
+<header>
+  <div class="brand">
+    <div class="logo">EX</div>
+    <div>
+      <h1>Comics Character Explorer</h1>
+      <div class="small">Marvel, DC & more — free dataset</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search character (e.g. Batman)" />
+    <select id="publisher">
+      <option value="all">All publishers</option>
+      <option value="Marvel Comics">Marvel Comics</option>
+      <option value="DC Comics">DC Comics</option>
+      <option value="Other">Other</option>
+    </select>
+    <select id="alignment">
+      <option value="all">All alignments</option>
+      <option value="good">Good</option>
+      <option value="bad">Bad</option>
+      <option value="neutral">Neutral</option>
+    </select>
+    <select id="sort">
+      <option value="none">Sort: default</option>
+      <option value="strength">Strength ↓</option>
+      <option value="speed">Speed ↓</option>
+      <option value="intelligence">Intelligence ↓</option>
+      <option value="durability">Durability ↓</option>
+    </select>
+
+    <div class="top-actions">
+      <button id="randomBtn">Random</button>
+      <button id="toggleTheme">Dark</button>
+      <button id="viewFavs">Favorites</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div id="status" class="small">Loading characters…</div>
+    <div style="margin-left:auto" class="small">Dataset: <strong>akabab / superhero-api</strong></div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="nothing" class="small" style="display:none;margin-top:12px">No results — try a different search.</div>
+</main>
+
+<!-- Modal -->
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div style="display:flex;justify-content:flex-end;gap:6px">
+      <button id="downloadBtn">Download JSON</button>
+      <button id="closeModal">Close</button>
+    </div>
+    <div class="head">
+      <img id="modalImg" src="" alt="hero image" />
+      <div style="flex:1">
+        <h2 id="modalName">Hero</h2>
+        <div id="modalSub" class="small"></div>
+        <p id="modalBio" class="small"></p>
+
+        <div class="stats" id="powerstats"></div>
+        <div style="margin-top:10px">
+          <button id="favToggle" class="btn-small">★ Add to favorites</button>
+          <button id="compareBtn" class="btn-small">⇄ Compare</button>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div class="card" style="padding:12px;min-width:220px">
+        <h4>Appearance</h4>
+        <div id="appearance" class="small"></div>
+      </div>
+      <div class="card" style="padding:12px;flex:1">
+        <h4>Biography</h4>
+        <div id="biography" class="small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compare Box -->
+<div id="compareBox" class="compare-box" style="display:none">
+  <strong>Compare:</strong>
+  <div id="compareList" class="small"></div>
+  <button id="compareNow">Show</button>
+</div>
+
+<footer>
+  Built with free public dataset · No API key required.
+</footer>
+
+<script>
+const API_ALL = 'https://akabab.github.io/superhero-api/api/all.json';
+let heroes = []; let shown = [];
+const grid = document.getElementById('grid');
+const status = document.getElementById('status');
+const search = document.getElementById('search');
+const publisher = document.getElementById('publisher');
+const alignment = document.getElementById('alignment');
+const sortSelect = document.getElementById('sort');
+const nothing = document.getElementById('nothing');
+const modal = document.getElementById('modal');
+const modalImg = document.getElementById('modalImg');
+const modalName = document.getElementById('modalName');
+const modalSub = document.getElementById('modalSub');
+const modalBio = document.getElementById('modalBio');
+const powerstats = document.getElementById('powerstats');
+const appearance = document.getElementById('appearance');
+const biography = document.getElementById('biography');
+const favToggle = document.getElementById('favToggle');
+const compareBtn = document.getElementById('compareBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const randomBtn = document.getElementById('randomBtn');
+const toggleTheme = document.getElementById('toggleTheme');
+const viewFavs = document.getElementById('viewFavs');
+const closeModal = document.getElementById('closeModal');
+const compareBox = document.getElementById('compareBox');
+const compareList = document.getElementById('compareList');
+const compareNow = document.getElementById('compareNow');
+
+let currentHero = null;
+let compareHeroes = [];
+
+const LS_KEY = 'comics_explorer_favs';
+const CACHE_KEY = 'comics_explorer_cache';
+
+function getFavs(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch(e){ return [] } }
+function saveFavs(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)) }
+function isFav(id){ return getFavs().includes(id) }
+function toggleFav(id){
+  const favs = getFavs();
+  const idx = favs.indexOf(id);
+  if(idx === -1) favs.push(id); else favs.splice(idx,1);
+  saveFavs(favs);
+  renderGrid(shown);
+  updateFavButton();
+}
+
+async function loadAll(){
+  try {
+    let cache = localStorage.getItem(CACHE_KEY);
+    if(cache){ heroes = JSON.parse(cache); status.textContent=`Loaded ${heroes.length} characters (cache).`; shown=heroes.slice(); renderGrid(shown); return; }
+    status.textContent = 'Fetching characters…';
+    const res = await fetch(API_ALL);
+    if(!res.ok) throw new Error('Network error');
+    heroes = await res.json();
+    localStorage.setItem(CACHE_KEY, JSON.stringify(heroes));
+    status.textContent = `Loaded ${heroes.length} characters.`;
+    shown = heroes.slice(); renderGrid(shown);
+  } catch (err) { status.textContent = 'Failed to load data.'; console.error(err); }
+}
+
+function shortPublisher(p){
+  if(!p) return 'Other'; if(p.includes('Marvel')) return 'Marvel Comics'; if(p.includes('DC')) return 'DC Comics'; return p;
+}
+
+function renderGrid(list){
+  grid.innerHTML = '';
+  if(!list.length){ nothing.style.display='block'; return; } else nothing.style.display='none';
+  list.forEach(hero=>{
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML=`
+      <div class="thumb" style="background-image:url('${hero.images?.sm||''}');"></div>
+      <h3>${hero.name}</h3>
+      <div class="meta">${shortPublisher(hero.biography?.publisher)}</div>
+      <div class="row">
+        <button class="btn-small" data-id="${hero.id}">View</button>
+        <button class="fav" data-fav="${hero.id}">${isFav(hero.id)?'★':'☆'}</button>
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+function openHero(hero){
+  currentHero = hero;
+  modalImg.src=hero.images?.lg||''; modalName.textContent=hero.name;
+  modalSub.textContent=`${hero.biography.fullName||'—'} · ${hero.biography.alignment||''} · ${shortPublisher(hero.biography.publisher)}`;
+  modalBio.textContent=hero.work?.base||hero.biography.placeOfBirth||'';
+  powerstats.innerHTML='';
+  Object.entries(hero.powerstats||{}).forEach(([k,v])=>{
+    const d=document.createElement('div'); d.className='stat';
+    d.innerHTML=`<strong>${k}</strong> (${v}) <div class="bar"><span style="width:${v}%;"></span></div>`;
+    powerstats.appendChild(d);
+  });
+  appearance.innerHTML=`Gender:${hero.appearance.gender||'—'}<br/>Race:${hero.appearance.race||'—'}<br/>Height:${(hero.appearance.height||[]).join('/')}<br/>Weight:${(hero.appearance.weight||[]).join('/')}<br/>Eye:${hero.appearance.eyeColor||'—'}<br/>Hair:${hero.appearance.hairColor||'—'}`;
+  biography.innerHTML=`Full name:${hero.biography.fullName||'—'}<br/>Aliases:${(hero.biography.aliases||[]).join(', ')}<br/>First appearance:${hero.biography.firstAppearance||'—'}<br/>Publisher:${shortPublisher(hero.biography.publisher)}`;
+  updateFavButton(); modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+}
+function updateFavButton(){ if(!currentHero) return; favToggle.textContent=isFav(currentHero.id)?'★ Remove favorite':'☆ Add to favorites'; }
+
+grid.addEventListener('click',e=>{
+  if(e.target.dataset.id){ const h=heroes.find(x=>x.id==e.target.dataset.id); if(h) openHero(h); }
+  if(e.target.dataset.fav){ toggleFav(Number(e.target.dataset.fav)); }
+});
+favToggle.addEventListener('click',()=>{ if(currentHero) toggleFav(currentHero.id); });
+closeModal.addEventListener('click',()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); });
+
+// Compare feature
+compareBtn.addEventListener('click',()=>{ if(!currentHero) return;
+  if(compareHeroes.length<2 && !compareHeroes.includes(currentHero)){ compareHeroes.push(currentHero); }
+  compareBox.style.display='block'; compareList.textContent=compareHeroes.map(h=>h.name).join(' vs ');
+});
+compareNow.addEventListener('click',()=>{
+  if(compareHeroes.length<2){ alert('Select 2 heroes for comparison.'); return; }
+  alert(compareHeroes.map(h=>h.name+': '+JSON.stringify(h.powerstats)).join('\n\n'));
+  compareHeroes=[]; compareBox.style.display='none';
+});
+
+// Download JSON
+downloadBtn.addEventListener('click',()=>{
+  if(!currentHero) return;
+  const blob=new Blob([JSON.stringify(currentHero,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=currentHero.name+'.json'; a.click();
+});
+
+// Filters
+function applyFilters(){
+  const q=search.value.toLowerCase(); let out=heroes.slice();
+  if(publisher.value!=='all'){
+    if(publisher.value==='Other'){ out=out.filter(h=>!/Marvel|DC/.test(h.biography.publisher||'')); }
+    else{ out=out.filter(h=>(h.biography.publisher||'').includes(publisher.value.replace(' Comics',''))); }
+  }
+  if(alignment.value!=='all'){ out=out.filter(h=>(h.biography.alignment||'').toLowerCase()===alignment.value); }
+  if(q){ out=out.filter(h=>(h.name||'').toLowerCase().includes(q)||(h.biography.fullName||'').toLowerCase().includes(q)); }
+  if(sortSelect.value!=='none'){ out.sort((a,b)=>(b.powerstats[sortSelect.value]||0)-(a.powerstats[sortSelect.value]||0)); }
+  shown=out; renderGrid(out); status.textContent=`Showing ${out.length}/${heroes.length}`;
+}
+[search,publisher,alignment,sortSelect].forEach(el=>el.addEventListener('input',applyFilters));
+randomBtn.addEventListener('click',()=>{ if(!heroes.length) return; openHero(heroes[Math.floor(Math.random()*heroes.length)]); });
+viewFavs.addEventListener('click',()=>{ const favs=getFavs(); const list=heroes.filter(h=>favs.includes(h.id)); shown=list; renderGrid(list); status.textContent=`Showing ${list.length} favorites.`; });
+toggleTheme.addEventListener('click',()=>{ const el=document.body; const cur=el.getAttribute('data-theme')||'light'; const next=cur==='light'?'dark':'light'; el.setAttribute('data-theme',next); toggleTheme.textContent=next==='light'?'Dark':'Light'; });
+
+// init
+loadAll();
+</script>
+</body>
+</html>

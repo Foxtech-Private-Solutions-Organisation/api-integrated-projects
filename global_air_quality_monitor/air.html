@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Air Quality Monitor</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom, #87CEEB, #f0f4f8); /* Global air theme sky gradient */
+    color: #333;
+  }
+  .container {
+    max-width: 900px;
+    margin: 20px auto;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  }
+  h1 {
+    text-align: center;
+    color: #1e3d59;
+    margin-bottom: 20px;
+  }
+  form {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  input[type="text"] {
+    padding: 10px;
+    width: 70%;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    padding: 10px 20px;
+    background-color: #1e3d59;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #162b42;
+  }
+  #air-quality-info {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .aqi {
+    font-size: 2em;
+    font-weight: bold;
+  }
+  #map {
+    height: 500px;
+    margin-top: 20px;
+    border-radius: 12px;
+    border: 2px solid #1e3d59;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  .city-card {
+    background-color: rgba(255,255,255,0.7);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🌏 Global Air Quality Monitor</h1>
+  <form id="location-form">
+    <input type="text" id="city" placeholder="Enter city name (e.g., Beijing)" required>
+    <button type="submit">Get AQI</button>
+  </form>
+  <div id="air-quality-info"></div>
+  <div id="map"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const form = document.getElementById('location-form');
+const cityInput = document.getElementById('city');
+const airQualityInfo = document.getElementById('air-quality-info');
+const apiKey = '82b2fb026d08841be86b302318c7d4e3f859121f'; // WAQI API token
+
+// Initialize map
+let map = L.map('map').setView([20, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function getAQIColor(aqi) {
+  if(aqi <= 50) return '#009966';       // Good
+  if(aqi <= 100) return '#ffde33';      // Moderate
+  if(aqi <= 150) return '#ff9933';      // Unhealthy for sensitive groups
+  if(aqi <= 200) return '#cc0033';      // Unhealthy
+  if(aqi <= 300) return '#660099';      // Very Unhealthy
+  return '#7e0023';                      // Hazardous
+}
+
+function getHealthMessage(aqi){
+  if(aqi <= 50) return "Air quality is good. Enjoy outdoor activities.";
+  if(aqi <= 100) return "Air quality is moderate. Sensitive groups should reduce prolonged outdoor exertion.";
+  if(aqi <= 150) return "Unhealthy for sensitive groups. Limit outdoor activities.";
+  if(aqi <= 200) return "Unhealthy. Everyone may experience effects. Limit outdoor activities.";
+  if(aqi <= 300) return "Very unhealthy. Avoid outdoor activities.";
+  return "Hazardous. Stay indoors.";
+}
+
+let markers = [];
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const city = cityInput.value.trim();
+  if (!city) return;
+
+  try {
+    const response = await fetch(`https://api.waqi.info/feed/${city}/?token=${apiKey}`);
+    const data = await response.json();
+
+    if (data.status === 'ok') {
+      const { aqi, iaqi, city: cityData, time } = data.data;
+
+      // Display AQI
+      airQualityInfo.innerHTML = `
+        <div class="city-card">
+          <h2>${cityData.name}</h2>
+          <p>AQI: <span class="aqi" style="color:${getAQIColor(aqi)}">${aqi}</span></p>
+          <p>Last Updated: ${time.s}</p>
+          <ul>
+            <li>PM2.5: ${iaqi.pm25 ? iaqi.pm25.v : 'N/A'} µg/m³</li>
+            <li>PM10: ${iaqi.pm10 ? iaqi.pm10.v : 'N/A'} µg/m³</li>
+            <li>CO: ${iaqi.co ? iaqi.co.v : 'N/A'} µg/m³</li>
+            <li>NO₂: ${iaqi.no2 ? iaqi.no2.v : 'N/A'} µg/m³</li>
+            <li>SO₂: ${iaqi.so2 ? iaqi.so2.v : 'N/A'} µg/m³</li>
+            <li>O₃: ${iaqi.o3 ? iaqi.o3.v : 'N/A'} µg/m³</li>
+          </ul>
+          <p><strong>Health Advice:</strong> ${getHealthMessage(aqi)}</p>
+        </div>
+      `;
+
+      // Map update
+      const lat = cityData.geo[0];
+      const lon = cityData.geo[1];
+      map.setView([lat, lon], 6);
+
+      // Remove old markers
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      const circle = L.circle([lat, lon], {
+        color: getAQIColor(aqi),
+        fillColor: getAQIColor(aqi),
+        fillOpacity: 0.5,
+        radius: 3000
+      }).addTo(map);
+
+      circle.bindPopup(`<b>${cityData.name}</b><br>AQI: ${aqi}<br>${getHealthMessage(aqi)}`).openPopup();
+      markers.push(circle);
+
+    } else {
+      airQualityInfo.innerHTML = `<p>Data not available for ${city}. Try another city.</p>`;
+    }
+  } catch (error) {
+    airQualityInfo.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
+  }
+});
+</script>
+
+</body>
+</html>

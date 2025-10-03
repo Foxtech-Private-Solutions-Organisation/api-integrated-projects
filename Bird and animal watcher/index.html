@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bird & Animal Watcher 🐦🦁</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(to right, #f0f8ff, #e6ffe6);
+      color: #333;
+    }
+    h1 { 
+      text-align: center; 
+      color: #2e8b57; 
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      background: #2e8b57;
+      color: white;
+      border-radius: 4px;
+      transition: 0.3s;
+    }
+    button:hover { background: #246b46; }
+    .results {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      padding: 10px;
+      width: 280px;
+      text-align: center;
+      transition: transform 0.3s;
+    }
+    .card:hover { transform: translateY(-5px); }
+    .card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .card img:hover { transform: scale(1.05); }
+    .card h3 {
+      margin: 8px 0;
+      color: #333;
+    }
+    .card p { margin: 4px 0; font-size: 14px; }
+    .category {
+      font-size: 13px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: white;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .bird { background: #1e90ff; }
+    .animal { background: #ff6347; }
+    .link-btn {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #ffa500;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .link-btn:hover { background: #e69500; }
+
+    /* Modal (popup) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      padding: 50px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 0.4s;
+    }
+    .modal-content img {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-btn:hover { color: #ff6347; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Loader */
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #2e8b57;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 50px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Bird & Animal Watcher 🐦🦁</h1>
+
+  <div style="text-align:center;">
+    <input type="text" id="animalInput" placeholder="Enter animal or bird name">
+    <button onclick="searchAnimal()">Search</button>
+    <button onclick="clearResults()">Clear</button>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <!-- Modal for details -->
+  <div id="infoModal" class="modal" onclick="closeModal(event)">
+    <span class="close-btn" onclick="closeModal(event)">&times;</span>
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    const modal = document.getElementById("infoModal");
+    const modalContent = document.getElementById("modalContent");
+    const API_KEY = "J3mXnWKq6zBfAxYHL48OYA==ztnOeHhjWSi46IXd"; // your key
+
+    // Helper: get image from Wikipedia + page url
+    async function getWikiData(title) {
+      try {
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return {
+          img: data.thumbnail ? data.thumbnail.source : "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+          link: data.content_urls ? data.content_urls.desktop.page : "#"
+        };
+      } catch {
+        return {
+          img: "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+          link: "#"
+        };
+      }
+    }
+
+    // Clear results
+    function clearResults() {
+      document.getElementById('animalInput').value = "";
+      resultsDiv.innerHTML = "";
+    }
+
+    // Show modal
+    function openModal(item, wiki, category) {
+      modal.style.display = "flex";
+      modalContent.innerHTML = `
+        <img src="${wiki.img}" alt="${item.name}">
+        <h2>${item.name}</h2>
+        ${item.taxonomy?.scientific_name ? `<p><b>Scientific Name:</b> ${item.taxonomy.scientific_name}</p>` : ""}
+        ${item.characteristics?.type ? `<p><b>Type:</b> ${item.characteristics.type}</p>` : ""}
+        ${item.characteristics?.diet ? `<p><b>Diet:</b> ${item.characteristics.diet}</p>` : ""}
+        ${item.characteristics?.lifespan ? `<p><b>Lifespan:</b> ${item.characteristics.lifespan}</p>` : ""}
+        ${item.locations?.length ? `<p><b>Location:</b> ${item.locations.join(", ")}</p>` : ""}
+        <a href="${wiki.link}" target="_blank" class="link-btn">🔗 More Info</a>
+      `;
+    }
+
+    function closeModal(event) {
+      if (event.target === modal || event.target.classList.contains("close-btn")) {
+        modal.style.display = "none";
+      }
+    }
+
+    // Search function
+    async function searchAnimal() {
+      const query = document.getElementById('animalInput').value.trim();
+      if (!query) return alert("Please enter an animal or bird name");
+
+      resultsDiv.innerHTML = '<div class="loader"></div>';
+
+      try {
+        const response = await fetch(`https://api.api-ninjas.com/v1/animals?name=${query}`, {
+          headers: { 'X-Api-Key': API_KEY }
+        });
+        const data = await response.json();
+
+        if (!data.length) {
+          resultsDiv.innerHTML = "<p>⚠️ No results found.</p>";
+          return;
+        }
+
+        resultsDiv.innerHTML = ""; // clear
+        for (let item of data.slice(0, 4)) {  // show top 4
+          const wiki = await getWikiData(item.name);
+
+          // Category (bird or animal)
+          let category = "Animal";
+          if (item.characteristics?.type && item.characteristics.type.toLowerCase().includes("bird")) {
+            category = "Bird";
+          }
+
+          let details = "";
+          if (item.taxonomy?.scientific_name) details += `<p><b>Scientific:</b> ${item.taxonomy.scientific_name}</p>`;
+          if (item.characteristics?.type) details += `<p><b>Type:</b> ${item.characteristics.type}</p>`;
+          if (item.characteristics?.diet) details += `<p><b>Diet:</b> ${item.characteristics.diet}</p>`;
+
+          resultsDiv.innerHTML += `
+            <div class="card">
+              <span class="category ${category === "Bird" ? "bird" : "animal"}">${category}</span>
+              <img src="${wiki.img}" alt="${item.name}" onclick='openModal(${JSON.stringify(item)}, ${JSON.stringify(wiki)}, "${category}")'>
+              <h3>${item.name}</h3>
+              ${details}
+              <a href="${wiki.link}" target="_blank" class="link-btn">🔗 More Info</a>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = "<p>❌ Error fetching data</p>";
+        console.error(error);
+      }
+    }
+
+    // Enter key press
+    document.getElementById('animalInput').addEventListener("keyup", function(e) {
+      if (e.key === "Enter") {
+        searchAnimal();
+      }
+    });
+  </script>
+</body>
+</html>

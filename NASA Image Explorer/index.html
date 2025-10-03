@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NASA Image Explorer</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0b3c5d 0%, #1d2731 100%);
+    color: #d9d9d9;
+    text-align: center;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  header {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+  
+  h1 {
+    color: #fff;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(66, 134, 244, 0.5);
+  }
+  
+  .tagline {
+    color: #a1c5ed;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+  }
+  
+  .search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 10px;
+  }
+  
+  input {
+    padding: 12px 15px;
+    width: 300px;
+    border-radius: 25px;
+    border: 2px solid #4286f4;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 15px rgba(66, 134, 244, 0.5);
+  }
+  
+  input::placeholder {
+    color: #a1c5ed;
+  }
+  
+  button {
+    padding: 12px 25px;
+    border-radius: 25px;
+    border: none;
+    background: #4286f4;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  button:hover {
+    background: #2a6fd6;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .filters {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .filter-btn {
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    color: #a1c5ed;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-btn:hover, .filter-btn.active {
+    background: #4286f4;
+    color: white;
+  }
+  
+  #images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+  }
+  
+  .image-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  }
+  
+  .image-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .image-card:hover img {
+    transform: scale(1.05);
+  }
+  
+  .image-info {
+    padding: 15px;
+    text-align: left;
+  }
+  
+  .image-info h3 {
+    margin-bottom: 10px;
+    color: white;
+    font-size: 1.1rem;
+  }
+  
+  .image-info p {
+    color: #a1c5ed;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 50px 20px;
+  }
+  
+  .modal-content {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #1d2731;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal-header {
+    padding: 20px;
+    background: #0b3c5d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-header h2 {
+    color: white;
+    font-size: 1.5rem;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .modal-body img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    margin-bottom: 20px;
+    border-radius: 10px;
+  }
+  
+  .modal-body p {
+    color: #d9d9d9;
+    line-height: 1.6;
+    margin-bottom: 15px;
+  }
+  
+  .modal-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .detail-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .detail-item h4 {
+    color: #4286f4;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .detail-item p {
+    color: #a1c5ed;
+    font-size: 0.9rem;
+  }
+  
+  .loading {
+    display: none;
+    margin: 30px auto;
+    text-align: center;
+  }
+  
+  .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #4286f4;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .error-message {
+    color: #ff6b6b;
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 10px;
+  }
+  
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #a1c5ed;
+  }
+  
+  footer {
+    margin-top: 50px;
+    padding: 20px;
+    color: #a1c5ed;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 768px) {
+    .search-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    input {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    
+    #images {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+  }
+  
+  @media (max-width: 480px) {
+    #images {
+      grid-template-columns: 1fr;
+    }
+    
+    h1 {
+      font-size: 2rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🌌 NASA Image Explorer</h1>
+    <p class="tagline">Discover the cosmos through NASA's vast collection of images</p>
+    
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search for galaxies, planets, astronauts...">
+      <button onclick="searchNASA()">
+        <span>Search</span>
+      </button>
+    </div>
+    
+    <div class="filters">
+      <button class="filter-btn active" data-filter="">All Images</button>
+      <button class="filter-btn" data-filter="apod">Astronomy Picture of the Day</button>
+      <button class="filter-btn" data-filter="mars">Mars Rovers</button>
+      <button class="filter-btn" data-filter="earth">Earth</button>
+      <button class="filter-btn" data-filter="jupiter">Jupiter</button>
+    </div>
+  </header>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Searching the cosmos...</p>
+  </div>
+
+  <div id="images"></div>
+
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle"></h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- <footer>
+    <p>NASA Image Explorer - College Mini Project</p>
+    <p>This project uses the NASA API to explore space imagery</p>
+  </footer>
+</div> -->
+
+<script>
+// DOM elements
+const searchInput = document.getElementById("searchInput");
+const imagesDiv = document.getElementById("images");
+const loadingDiv = document.getElementById("loading");
+const modal = document.getElementById("imageModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+const filterButtons = document.querySelectorAll('.filter-btn');
+
+// Add event listeners
+searchInput.addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    searchNASA();
+  }
+});
+
+filterButtons.forEach(button => {
+  button.addEventListener('click', function() {
+    filterButtons.forEach(btn => btn.classList.remove('active'));
+    this.classList.add('active');
+    searchNASA();
+  });
+});
+
+// Search function
+async function searchNASA() {
+  const query = searchInput.value.trim();
+  const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+  
+  imagesDiv.innerHTML = "";
+  loadingDiv.style.display = "block";
+  
+  if (!query && !activeFilter) {
+    loadingDiv.style.display = "none";
+    imagesDiv.innerHTML = `<div class="error-message">Please enter a search term or select a filter!</div>`;
+    return;
+  }
+
+  try {
+    let apiUrl = "";
+    
+    if (activeFilter === "apod") {
+      // Astronomy Picture of the Day
+      apiUrl = `https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&count=20`;
+    } else {
+      // Standard image search
+      apiUrl = `https://images-api.nasa.gov/search?q=${encodeURIComponent(query || activeFilter)}&media_type=image`;
+    }
+    
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error("Network response was not ok");
+    const data = await response.json();
+    
+    loadingDiv.style.display = "none";
+    imagesDiv.innerHTML = "";
+    
+    if ((data.collection && data.collection.items.length === 0) || (activeFilter === "apod" && data.length === 0)) {
+      imagesDiv.innerHTML = `<div class="no-results">
+        <h3>No images found</h3>
+        <p>Try a different search term or filter</p>
+      </div>`;
+      return;
+    }
+    
+    // Process based on API endpoint
+    if (activeFilter === "apod") {
+      displayAPOD(data);
+    } else {
+      displayStandardImages(data);
+    }
+  } catch (err) {
+    console.error(err);
+    loadingDiv.style.display = "none";
+    imagesDiv.innerHTML = `<div class="error-message">
+      Error fetching NASA images. Please check your internet connection and try again.
+    </div>`;
+  }
+}
+
+// Display standard NASA images
+function displayStandardImages(data) {
+  data.collection.items.forEach(item => {
+    const imgUrl = item.links ? item.links[0].href : "";
+    const title = item.data ? item.data[0].title : "Untitled";
+    const description = item.data ? item.data[0].description : "No description available.";
+    const date = item.data ? item.data[0].date_created : "Unknown date";
+    const photographer = item.data && item.data[0].photographer ? item.data[0].photographer : "Unknown";
+    
+    const card = document.createElement("div");
+    card.className = "image-card";
+    card.innerHTML = `
+      <img src="${imgUrl}" alt="${title}" loading="lazy">
+      <div class="image-info">
+        <h3>${title}</h3>
+        <p>${description.substring(0, 100)}...</p>
+      </div>
+    `;
+    
+    card.addEventListener("click", () => {
+      openModal(title, imgUrl, description, date, photographer);
+    });
+    
+    imagesDiv.appendChild(card);
+  });
+}
+
+// Display Astronomy Picture of the Day
+function displayAPOD(data) {
+  data.forEach(item => {
+    const imgUrl = item.url || "";
+    const title = item.title || "Untitled";
+    const description = item.explanation || "No description available.";
+    const date = item.date || "Unknown date";
+    const photographer = item.copyright || "Unknown";
+    
+    const card = document.createElement("div");
+    card.className = "image-card";
+    card.innerHTML = `
+      <img src="${imgUrl}" alt="${title}" loading="lazy">
+      <div class="image-info">
+        <h3>${title}</h3>
+        <p>${description.substring(0, 100)}...</p>
+      </div>
+    `;
+    
+    card.addEventListener("click", () => {
+      openModal(title, imgUrl, description, date, photographer);
+    });
+    
+    imagesDiv.appendChild(card);
+  });
+}
+
+// Open modal with image details
+function openModal(title, imgUrl, description, date, photographer) {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = `
+    <img src="${imgUrl}" alt="${title}">
+    <p>${description}</p>
+    <div class="modal-details">
+      <div class="detail-item">
+        <h4>Date Created</h4>
+        <p>${date.substring(0, 10)}</p>
+      </div>
+      <div class="detail-item">
+        <h4>Photographer</h4>
+        <p>${photographer}</p>
+      </div>
+      <div class="detail-item">
+        <h4>Image Source</h4>
+        <p>NASA Image Library</p>
+      </div>
+    </div>
+  `;
+  modal.style.display = "block";
+  document.body.style.overflow = "hidden";
+}
+
+// Close modal
+function closeModal() {
+  modal.style.display = "none";
+  document.body.style.overflow = "auto";
+}
+
+// Close modal when clicking outside
+window.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+// Load some initial images on page load
+window.addEventListener("load", () => {
+  searchInput.value = "galaxy";
+  searchNASA();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚍 Public Transport Navigator</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: #004d99;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    #map {
+      flex: 1;
+    }
+    .controls {
+      padding: 10px;
+      background: #f8f9fa;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+    input, select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 200px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #004d99;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0066cc;
+    }
+    #info {
+      padding: 10px;
+      text-align: center;
+      background: #e9ecef;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    #loading {
+      text-align: center;
+      padding: 10px;
+      color: #004d99;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚍 Public Transport Navigator</h1>
+  </header>
+
+  <div class="controls">
+    <input type="text" id="start" placeholder="Start city/place">
+    <input type="text" id="end" placeholder="End city/place">
+    <select id="mode">
+      <option value="driving-car">🚗 Driving</option>
+      <option value="cycling-regular">🚴 Cycling</option>
+      <option value="foot-walking">🚶 Walking</option>
+    </select>
+    <button onclick="getRoute()">Get Route</button>
+    <button onclick="clearRoute()">Clear</button>
+  </div>
+
+  <div id="loading">Loading route, please wait...</div>
+  <div id="map"></div>
+  <div id="info">ℹ️ Enter places and click "Get Route"</div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Initialize map
+    const map = L.map("map").setView([28.6139, 77.2090], 6); // Default: India
+
+    // Add OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+
+    let routeLayer, startMarker, endMarker;
+
+    // Convert place -> coordinates using Nominatim
+    async function geocode(place) {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`);
+      const data = await res.json();
+      if (data.length > 0) {
+        return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+      } else {
+        throw new Error("Place not found: " + place);
+      }
+    }
+
+    async function getRoute() {
+      const startPlace = document.getElementById("start").value;
+      const endPlace = document.getElementById("end").value;
+      const mode = document.getElementById("mode").value;
+
+      if (!startPlace || !endPlace) {
+        alert("Enter both start and end places");
+        return;
+      }
+
+      document.getElementById("loading").style.display = "block";
+
+      try {
+        // Geocode both places
+        const startCoords = await geocode(startPlace);
+        const endCoords = await geocode(endPlace);
+
+        // OpenRouteService directions
+        const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjJlNDhmMWU0YzkzNDQxNjJiNGNiZGMwZmIzZDFlNTBlIiwiaCI6Im11cm11cjY0In0="; // Replace with your free ORS API key
+        const url = `https://api.openrouteservice.org/v2/directions/${mode}?api_key=${apiKey}&start=${startCoords[0]},${startCoords[1]}&end=${endCoords[0]},${endCoords[1]}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.features) throw new Error("No route found");
+
+        if (routeLayer) map.removeLayer(routeLayer);
+        if (startMarker) map.removeLayer(startMarker);
+        if (endMarker) map.removeLayer(endMarker);
+
+        const coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        routeLayer = L.polyline(coords, { color: "blue", weight: 5 }).addTo(map);
+        startMarker = L.marker([startCoords[1], startCoords[0]]).addTo(map).bindPopup("Start: " + startPlace).openPopup();
+        endMarker = L.marker([endCoords[1], endCoords[0]]).addTo(map).bindPopup("End: " + endPlace);
+
+        map.fitBounds(routeLayer.getBounds());
+
+        // Show distance & duration
+        const summary = data.features[0].properties.summary;
+        const distKm = (summary.distance / 1000).toFixed(2);
+        const timeMin = Math.round(summary.duration / 60);
+        document.getElementById("info").innerText = `📍 Distance: ${distKm} km | ⏱ Duration: ${timeMin} min | Mode: ${mode.replace("-", " ")}`;
+
+      } catch (err) {
+        console.error(err);
+        alert("Error: " + err.message);
+      } finally {
+        document.getElementById("loading").style.display = "none";
+      }
+    }
+
+    function clearRoute() {
+      if (routeLayer) map.removeLayer(routeLayer);
+      if (startMarker) map.removeLayer(startMarker);
+      if (endMarker) map.removeLayer(endMarker);
+      document.getElementById("info").innerText = "ℹ️ Enter places and click \"Get Route\"";
+    }
+  </script>
+</body>
+</html>

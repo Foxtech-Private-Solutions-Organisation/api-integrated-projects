@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Learning Dashboard 🌐</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f8ff;
+      color: #333;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    #result, #history, #vocab, #randomWord, #quizResult {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h1 { color: #0077b6; }
+    .section { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <h1>Language Learning Dashboard 🌐</h1>
+
+  <!-- Translation Section -->
+  <div class="section">
+    <label for="textInput">Type text:</label><br>
+    <input type="text" id="textInput" placeholder="Enter text to translate" size="50">
+  </div>
+
+  <div class="section">
+    <label for="sourceLang">From:</label>
+    <select id="sourceLang">
+      <option value="en">English</option>
+      <option value="es">Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="ta">Tamil</option>
+      <option value="hi">Hindi</option>
+    </select>
+
+    <label for="targetLang">To:</label>
+    <select id="targetLang">
+      <option value="en">English</option>
+      <option value="es">Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="ta">Tamil</option>
+      <option value="hi">Hindi</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <button onclick="translateText()">Translate</button>
+    <button onclick="speakTranslation()">🔊 Speak</button>
+  </div>
+
+  <div class="section">
+    <h3>Translation:</h3>
+    <div id="result">Your translation will appear here.</div>
+  </div>
+
+  <div class="section">
+    <h3>Vocabulary List:</h3>
+    <div id="vocab">No words yet.</div>
+  </div>
+
+  <div class="section">
+    <h3>History:</h3>
+    <div id="history">No history yet.</div>
+  </div>
+
+  <!-- Random Word of the Day & Quiz -->
+  <div class="section">
+    <h3>🎲 Random Word of the Day:</h3>
+    <div id="randomWord">Click below to get a random word.</div>
+    <button onclick="generateRandomWord()">Generate Word</button>
+  </div>
+
+  <div class="section">
+    <label for="quizInput">Translate this word:</label><br>
+    <input type="text" id="quizInput" placeholder="Type your answer">
+    <button onclick="checkQuiz()">Check Answer</button>
+    <div id="quizResult"></div>
+  </div>
+
+  <script>
+    // Initialize lists and last translation from LocalStorage
+    let vocabList = JSON.parse(localStorage.getItem('vocabList')) || [];
+    let historyList = JSON.parse(localStorage.getItem('historyList')) || [];
+    let lastTranslation = "";
+    let randomWord = localStorage.getItem('randomWord') || "";
+    let randomWordTranslation = localStorage.getItem('randomWordTranslation') || "";
+
+    // Update UI with stored data
+    document.getElementById('vocab').innerHTML = vocabList.join(", ") || "No words yet.";
+    document.getElementById('history').innerHTML = historyList.join("<br>") || "No history yet.";
+    if (randomWord) document.getElementById('randomWord').innerText = randomWord;
+
+    // Translation Function
+    async function translateText() {
+      const text = document.getElementById('textInput').value.trim();
+      const source = document.getElementById('sourceLang').value;
+      const target = document.getElementById('targetLang').value;
+
+      if (!text) {
+        alert('Please enter some text to translate.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
+        const data = await response.json();
+
+        const translated = data.responseData.translatedText;
+        lastTranslation = translated;
+        document.getElementById('result').innerText = translated;
+
+        // Vocabulary list
+        if (!vocabList.includes(translated)) vocabList.push(translated);
+        localStorage.setItem('vocabList', JSON.stringify(vocabList));
+        document.getElementById('vocab').innerHTML = vocabList.join(", ");
+
+        // Translation history
+        historyList.push(`${text} → ${translated}`);
+        localStorage.setItem('historyList', JSON.stringify(historyList));
+        document.getElementById('history').innerHTML = historyList.join("<br>");
+
+      } catch (error) {
+        document.getElementById('result').innerText = "Error translating text.";
+        console.error(error);
+      }
+    }
+
+    // Speak Function
+    function speakTranslation() {
+      if (!lastTranslation) {
+        alert("Translate something first!");
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(lastTranslation);
+      utterance.lang = document.getElementById('targetLang').value;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Random Word Generator
+    const sampleWords = ["apple", "book", "computer", "house", "sun", "school", "flower", "car", "music", "water"];
+    async function generateRandomWord() {
+      const index = Math.floor(Math.random() * sampleWords.length);
+      randomWord = sampleWords[index];
+      document.getElementById('randomWord').innerText = randomWord;
+
+      // Translate word to target language for quiz
+      const target = document.getElementById('targetLang').value;
+      try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(randomWord)}&langpair=en|${target}`);
+        const data = await response.json();
+        randomWordTranslation = data.responseData.translatedText;
+        localStorage.setItem('randomWord', randomWord);
+        localStorage.setItem('randomWordTranslation', randomWordTranslation);
+      } catch (error) {
+        randomWordTranslation = "";
+      }
+    }
+
+    // Quiz Check
+    function checkQuiz() {
+      const answer = document.getElementById('quizInput').value.trim();
+      if (!answer) return alert("Type your translation first!");
+      if (!randomWordTranslation) return alert("Generate a random word first!");
+
+      if (answer.toLowerCase() === randomWordTranslation.toLowerCase()) {
+        document.getElementById('quizResult').innerText = "✅ Correct!";
+      } else {
+        document.getElementById('quizResult').innerText = `❌ Wrong! Correct: ${randomWordTranslation}`;
+      }
+      document.getElementById('quizInput').value = "";
+    }
+  </script>
+
+</body>
+</html>

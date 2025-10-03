@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Country Explorer</title>
+  <style>
+    :root {
+      --primary: #0d47a1; --accent: #ff9800;
+      --bg-light: #eef2f7; --bg-dark: #1c1f2e;
+      --txt: #222; --txt-dark: #f1f1f1; --card-dark: #2c2f4a;
+      --accent-dark: #ffdf6c; --fav-bg: #fff3e0;
+      --fav-bg-dark: #33385c;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-light);
+      color: var(--txt);
+      transition: background 0.3s, color 0.3s;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    main { max-width: 1000px; margin: auto; }
+    h1 { color: var(--primary); margin-bottom: 24px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 12px; }
+    input, select, button {
+      padding: 12px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      accent-color: var(--accent);
+      outline: none;
+      font-size: 1rem;
+    }
+    input:focus, select:focus { border-color: var(--primary); }
+    button {
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover, button:focus { background: #1565c0; }
+    #countries {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+      scroll-snap-type: y proximity;
+    }
+    .country-card {
+      background: #fff;
+      border-radius: 11px;
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+      scroll-snap-align: start;
+      transition: transform 0.2s, box-shadow 0.2s;
+      container-type: inline-size;
+      text-align: left;
+    }
+    .country-card:hover, .country-card:focus {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 7px 32px rgba(0,0,0,0.16);
+    }
+    .country-card img {
+      width: 100%; height: 150px; object-fit: cover;
+      border-radius: 7px; margin-bottom: 12px;
+      background: #eee;
+      loading: lazy;
+    }
+    .country-card h3 { text-align: center; margin: 14px 0 8px; color: var(--primary); }
+    .country-card p { margin: 7px 0; font-size: 15px; }
+    .fav-btn { margin-top: 10px; background: var(--accent); }
+    .fav-btn:hover { background: #e68900;}
+    .compare-btn { background: #4caf50; margin-left: 6px;}
+    #favorites, #compare {
+      margin-top: 36px;
+      text-align: left;
+      max-width: 700px;
+      margin-left: auto; margin-right: auto;
+    }
+    #favorites h2, #compare h2 { color: var(--primary); }
+    .favorite-item {
+      background: var(--fav-bg);
+      padding: 10px; border-radius: 6px; margin: 7px 0;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .favorite-item button {
+      background: #e5383b; color: #fff; border: none; border-radius: 4px; padding: 5px 11px; cursor: pointer;
+    }
+    .favorite-item button:hover { background: #ba181b; }
+    .dark {
+      background: var(--bg-dark);
+      color: var(--txt-dark);
+    }
+    .dark h1, .dark h2 { color: var(--accent-dark);}
+    .dark input, .dark select {
+      background: var(--card-dark); color: #fff; border: 1px solid #555;
+    }
+    .dark button { background: var(--accent-dark); color: var(--bg-dark);}
+    .dark .country-card { background: var(--card-dark); color: #fff;}
+    .dark .favorite-item { background: var(--fav-bg-dark); color: var(--accent-dark);}
+    @container (min-width:400px) {
+      .country-card h3 { font-size:1.5rem;}
+    }
+    @media (max-width:600px) {
+      .controls { flex-direction: column;}
+      .country-card { padding: 11px;}
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>🌍 Country Explorer</h1>
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Country name">
+    <select id="regionSelect">
+      <option value="">All regions</option>
+      <option value="Africa">Africa</option>
+      <option value="Americas">Americas</option>
+      <option value="Asia">Asia</option>
+      <option value="Europe">Europe</option>
+      <option value="Oceania">Oceania</option>
+    </select>
+    <button id="searchBtn" aria-label="Search countries">Search</button>
+    <button id="themeBtn" aria-label="Toggle theme">🌙 Theme</button>
+  </div>
+  <div id="countries"></div>
+  <section id="compare">
+    <h2>🔎 Country Comparison</h2>
+    <div id="compareList">Select countries to compare.</div>
+    <button id="clearCompareBtn">Clear Comparison</button>
+  </section>
+  <aside id="favorites">
+    <h2>⭐ Favorite Countries</h2>
+    <div id="favList">No favorites yet.</div>
+    <button id="clearFavBtn">Clear Favorites</button>
+  </aside>
+</main>
+<script>
+  // Theme logic
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.onclick = () => {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark':'light');
+  };
+  if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+
+  // Controls
+  document.getElementById('searchBtn').onclick = searchCountry;
+  document.getElementById('regionSelect').oninput = searchCountry;
+
+  let compareCountries = [];
+  let loadedData = [];
+  // Country search with region filter
+  async function searchCountry() {
+    const query = document.getElementById("searchInput").value.trim();
+    const region = document.getElementById("regionSelect").value;
+    const countriesDiv = document.getElementById("countries");
+    countriesDiv.innerHTML = "<p>⏳ Loading...</p>";
+    let api = query ?
+      `https://restcountries.com/v3.1/name/${encodeURIComponent(query)}` :
+      `https://restcountries.com/v3.1/all`;
+
+    try {
+      const resp = await fetch(api);
+      if (!resp.ok) throw new Error("Country not found");
+      let data = await resp.json();
+      if (region) data = data.filter(c => c.region === region);
+      loadedData = data;
+      countriesDiv.innerHTML = "";
+      data.forEach(country => {
+        const flag = country.flags?.svg ?? "";
+        const name = country.name?.common ?? "Unknown";
+        const capital = country.capital ? country.capital : "—";
+        const region = country.region || "—";
+        const population = country.population?.toLocaleString() || "—";
+        const languages = country.languages ? Object.values(country.languages).join(", ") : "—";
+        const currency = country.currencies ? Object.values(country.currencies)[0].name : "—";
+        const timezones = country.timezones ? country.timezones.join(", ") : "—";
+        const borders = country.borders ? country.borders.join(", ") : "None";
+        const mapLink = country.maps?.googleMaps || "#";
+        let weatherHTML = "";
+        if (capital && country.latlng) {
+          try {
+            const [lat, lon] = country.latlng;
+            weatherHTML = `<span>Weather: <span id="w${name}">Loading...</span>°C</span>`;
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+              .then(r=>r.json()).then(wdata=>{
+                if(wdata.current_weather) {
+                  document.getElementById(`w${name}`).innerText = wdata.current_weather.temperature;
+                } else {document.getElementById(`w${name}`).innerText="N/A";}
+              });
+          } catch {
+            weatherHTML = `<span>Weather: Not Available</span>`;
+          }
+        }
+        const card = document.createElement("div");
+        card.className = "country-card";
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <img src="${flag}" alt="${name} Flag" loading="lazy">
+          <h3>${name}</h3>
+          <p><b>Capital:</b> ${capital}</p>
+          <p><b>Region:</b> ${region}</p>
+          <p><b>Population:</b> ${population}</p>
+          <p><b>Language(s):</b> ${languages}</p>
+          <p><b>Currency:</b> ${currency}</p>
+          <p><b>Timezones:</b> ${timezones}</p>
+          <p><b>Borders:</b> ${borders}</p>
+          <p>${weatherHTML}</p>
+          <p><a href="${mapLink}" target="_blank">📍 View on Map</a></p>
+          <button class="fav-btn" onclick="addFavorite('${name}')">⭐ Favorite</button>
+          <button class="compare-btn" onclick="addCompare('${name}')">🔎 Compare</button>
+        `;
+        countriesDiv.appendChild(card);
+      });
+      if (!data.length) countriesDiv.innerHTML = "<p>❌ No countries found for this search.</p>";
+    } catch {
+      countriesDiv.innerHTML = "<p style='color:red;'>❌ Could not fetch country data.</p>";
+    }
+  }
+  // Favorites logic
+  function addFavorite(name) {
+    let favorites = JSON.parse(localStorage.getItem("favorites")||"[]");
+    if (!favorites.includes(name)) {
+      favorites.push(name);
+      localStorage.setItem("favorites", JSON.stringify(favorites));
+      loadFavorites();
+    }
+  }
+  function loadFavorites() {
+    let favorites = JSON.parse(localStorage.getItem("favorites")||"[]");
+    const favList = document.getElementById("favList");
+    favList.innerHTML = favorites.length ?
+      favorites.map(c=>`<div class="favorite-item">${c}<button onclick="removeFavorite('${c}')">🗑️</button></div>`).join("")
+      : "No favorites yet.";
+  }
+  function removeFavorite(name) {
+    let favorites = JSON.parse(localStorage.getItem("favorites")||"[]");
+    favorites = favorites.filter(c=>c!==name);
+    localStorage.setItem("favorites", JSON.stringify(favorites));
+    loadFavorites();
+  }
+  document.getElementById('clearFavBtn').onclick = function() {
+    localStorage.removeItem("favorites");
+    loadFavorites();
+  };
+  window.addFavorite = addFavorite;
+  window.removeFavorite = removeFavorite;
+
+  // Compare logic
+  function addCompare(name) {
+    if (!compareCountries.includes(name)) {
+      compareCountries.push(name);
+      updateCompare();
+    }
+  }
+  function removeCompare(name) {
+    compareCountries = compareCountries.filter(c => c !== name);
+    updateCompare();
+  }
+  function updateCompare() {
+    const compareList = document.getElementById("compareList");
+    if (!compareCountries.length) {
+      compareList.innerHTML = "Select countries to compare.";
+      return;
+    }
+    let rows = compareCountries.map(cname=>{
+      let country = loadedData.find(c=>c.name?.common===cname);
+      if (!country) return `<tr><td>${cname}</td><td colspan="6">Data not loaded</td></tr>`;
+      const capital = country.capital ? country.capital : "—";
+      const population = country.population || "—";
+      const region = country.region || "—";
+      const currency = country.currencies ? Object.values(country.currencies)[0].name : "—";
+      return `<tr>
+        <td>${country.name.common}</td>
+        <td>${capital}</td>
+        <td>${region}</td>
+        <td>${population.toLocaleString()}</td>
+        <td>${currency}</td>
+        <td><button onclick="removeCompare('${country.name.common}')">❌</button></td>
+      </tr>`;
+    }).join("");
+    compareList.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead>
+      <tr style="background:var(--accent);color:#fff;">
+        <th>Name</th><th>Capital</th><th>Region</th><th>Population</th><th>Currency</th><th></th>
+      </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  document.getElementById('clearCompareBtn').onclick = function() {
+    compareCountries = [];
+    updateCompare();
+  };
+  window.addCompare = addCompare;
+  window.removeCompare = removeCompare;
+
+  // Accessibility
+  document.getElementById('searchInput').setAttribute('aria-label','Country name search');
+  document.getElementById('regionSelect').setAttribute('aria-label','Region filter');
+  document.getElementById('favList').setAttribute('role','list');
+  document.getElementById('countries').setAttribute('role','region');
+  document.getElementById('compareList').setAttribute('role','region');
+
+  // Initial load
+  loadFavorites();
+  searchCountry();
+</script>
+</body>
+</html>

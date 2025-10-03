@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📈 Stock Market Insights</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: #f4f7fc;
+    margin: 0;
+    color: #333;
+  }
+  header {
+    text-align: center;
+    padding: 30px 20px;
+    background: linear-gradient(90deg, #4a90e2, #50e3c2);
+    color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  header h1 { margin: 0; font-size: 2rem; }
+  .search-bar {
+    text-align: center;
+    margin: 20px 0;
+  }
+  .search-bar input {
+    padding: 10px 15px;
+    width: 250px;
+    font-size: 16px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    outline: none;
+  }
+  .search-bar button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 20px;
+    background: #4a90e2;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .stock-info {
+    text-align: center;
+    margin: 20px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    max-width: 600px;
+  }
+  .stock-info h2 { margin: 0 0 10px 0; }
+  .stock-info p { margin: 5px 0; font-size: 1rem; }
+  .stock-info .change-positive { color: green; }
+  .stock-info .change-negative { color: red; }
+  canvas { margin: 30px auto; display: block; max-width: 90%; }
+  footer {
+    text-align: center;
+    padding: 15px;
+    background: #333;
+    color: white;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📈 Stock Market Insights</h1>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="symbolInput" placeholder="Enter stock symbol e.g. AAPL">
+  <button onclick="getStock()">Search</button>
+</div>
+
+<div class="stock-info" id="stockInfo">
+  <p>Enter a stock symbol and click search to see insights.</p>
+</div>
+
+<canvas id="stockChart" width="400" height="200"></canvas>
+
+<footer>
+  <p>Powered by Financial Modeling Prep API</p>
+</footer>
+
+<script>
+const API_KEY = "mFn1negLOERoClxLDPVKRsWFw1fWi88i"; // Replace with your actual API key
+
+async function getStock() {
+  const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+  if(!symbol) return alert('Please enter a stock symbol!');
+
+  const infoDiv = document.getElementById('stockInfo');
+  infoDiv.innerHTML = '<p>Loading...</p>';
+
+  try {
+    // Fetch real-time quote
+    const res = await fetch(`https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${API_KEY}`);
+    const data = await res.json();
+    if(!data || data.length === 0) {
+      infoDiv.innerHTML = '<p>Stock not found. Try another symbol.</p>';
+      return;
+    }
+    const stock = data[0];
+
+    // Show stock info
+    const changeClass = stock.change >=0 ? 'change-positive' : 'change-negative';
+    infoDiv.innerHTML = `
+      <h2>${stock.name} (${stock.symbol})</h2>
+      <p>Price: $${stock.price}</p>
+      <p class="${changeClass}">Change: ${stock.change} (${stock.changesPercentage}%)</p>
+      <p>Market Cap: $${(stock.marketCap/1e9).toFixed(2)}B</p>
+    `;
+
+    // Fetch historical data (5 days)
+    const histRes = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?timeseries=5&apikey=${API_KEY}`);
+    const histData = await histRes.json();
+    if(histData.historical) {
+      const labels = histData.historical.map(d => d.date).reverse();
+      const prices = histData.historical.map(d => d.close).reverse();
+
+      const ctx = document.getElementById('stockChart').getContext('2d');
+      if(window.stockChartInstance) window.stockChartInstance.destroy();
+      window.stockChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `${symbol} Closing Price`,
+            data: prices,
+            borderColor: '#4a90e2',
+            backgroundColor: 'rgba(74,144,226,0.2)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+
+  } catch(err) {
+    console.error(err);
+    infoDiv.innerHTML = '<p>Error fetching stock data. Try again later.</p>';
+  }
+}
+</script>
+
+</body>
+</html>

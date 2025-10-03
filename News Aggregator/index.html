@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Aggregator 📰</title>
+  <style>
+    body { font-family: Arial; margin:0; background:#f5f5f5; }
+    header { background:#ff4500; color:white; text-align:center; padding:20px 0; font-size:24px; font-weight:bold; }
+    .controls { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; padding:15px; }
+    .controls input, .controls button { padding:10px; font-size:16px; border-radius:5px; border:1px solid #ccc; outline:none; }
+    .controls button { cursor:pointer; background:#ff4500; color:white; border:none; }
+    .category-btn { background:#fff; border:1px solid #ff4500; color:#ff4500; cursor:pointer; padding:10px 15px; border-radius:5px; transition: 0.3s; }
+    .category-btn.active, .category-btn:hover { background:#ff4500; color:#fff; }
+    .news-container { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px; padding:20px; }
+    .news-card { background:white; border-radius:10px; overflow:hidden; box-shadow:0 4px 8px rgba(0,0,0,0.1); display:flex; flex-direction:column; transition: 0.3s; }
+    .news-card:hover { transform: translateY(-5px); box-shadow:0 8px 16px rgba(0,0,0,0.2); }
+    .news-card img { width:100%; height:180px; object-fit:cover; }
+    .news-card .content { padding:15px; flex-grow:1; }
+    .news-card .content h3 { margin:0 0 10px 0; font-size:18px; }
+    .news-card .content p { font-size:14px; color:#555; }
+    .news-card .content a { display:inline-block; margin-top:10px; color:#ff4500; text-decoration:none; font-weight:bold; }
+    .load-more { display:block; margin:20px auto; padding:10px 20px; background:#ff4500; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px; }
+  </style>
+</head>
+<body>
+
+<header>News Aggregator 📰</header>
+
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Search news...">
+  <button onclick="searchNews()">Search</button>
+  <button class="category-btn" onclick="filterCategory('technology', this)">Technology</button>
+  <button class="category-btn" onclick="filterCategory('sports', this)">Sports</button>
+  <button class="category-btn" onclick="filterCategory('business', this)">Business</button>
+  <button class="category-btn" onclick="filterCategory('entertainment', this)">Entertainment</button>
+</div>
+
+<div class="news-container" id="newsContainer"></div>
+<button class="load-more" id="loadMoreBtn" onclick="loadMoreNews()" style="display:none;">Load More</button>
+
+<script>
+const API_KEY = "-A7DcivVrkFGACHSo-toGb-O-ZbOtC06y2_Ili5ujt_z7fir"; // 🔑 Replace with your key
+let currentCategory = '';
+let currentQuery = '';
+let currentPage = 1;
+
+// Fetch news from Currents API
+async function fetchNews(category = '', query = '', page = 1, append = false) {
+  const container = document.getElementById('newsContainer');
+  if(!append) container.innerHTML = "<p>Loading news...</p>";
+
+  // Build API URL
+  let url = `https://api.currentsapi.services/v1/search?apiKey=${API_KEY}&page_number=${page}&page_size=10&language=en`;
+  if(query) url += `&keywords=${encodeURIComponent(query)}`;
+  if(category) url += `&category=${category}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("API error: " + res.status);
+    const data = await res.json();
+
+    if (data && data.news && data.news.length > 0) {
+      displayNews(data.news, append);
+      document.getElementById('loadMoreBtn').style.display = 'block';
+    } else {
+      container.innerHTML = "<p>No news found!</p>";
+      document.getElementById('loadMoreBtn').style.display = 'none';
+    }
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p>⚠️ Error fetching news (maybe API limit reached).</p>";
+    document.getElementById('loadMoreBtn').style.display = 'none';
+  }
+}
+
+function displayNews(newsArray, append = false) {
+  const container = document.getElementById('newsContainer');
+  if(!append) container.innerHTML = '';
+  newsArray.forEach(news => {
+    const card = document.createElement('div');
+    card.classList.add('news-card');
+    card.innerHTML = `
+      <img src="${news.image || 'https://via.placeholder.com/400x200'}" alt="${news.title}">
+      <div class="content">
+        <h3>${news.title}</h3>
+        <p>${news.description || ''}</p>
+        <small>Source: ${news.author || 'Unknown'} | ${news.published ? new Date(news.published).toLocaleDateString() : ''}</small><br>
+        <a href="${news.url}" target="_blank">Read more</a>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function searchNews() {
+  currentQuery = document.getElementById('searchInput').value;
+  currentPage = 1;
+  fetchNews(currentCategory, currentQuery, currentPage);
+}
+
+function filterCategory(category, btn) {
+  currentCategory = category;
+  currentQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPage = 1;
+  fetchNews(currentCategory, currentQuery, currentPage);
+}
+
+function loadMoreNews() {
+  currentPage++;
+  fetchNews(currentCategory, currentQuery, currentPage, true);
+}
+
+// Initial load
+fetchNews();
+</script>
+
+</body>
+</html>

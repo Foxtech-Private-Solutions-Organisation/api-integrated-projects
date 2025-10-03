@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trefle Plant Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8f5;
+      padding: 20px;
+    }
+    h1 { color: green; }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    img {
+      max-width: 250px;
+      border-radius: 10px;
+      margin-top: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <h1>🌱 Plant Search (Trefle API)</h1>
+  <p>Enter a plant name:</p>
+
+  <input type="text" id="plantName" placeholder="e.g. lotus">
+  <button onclick="searchPlant()">Search</button>
+
+  <div id="output" class="result"></div>
+
+  <script>
+    async function searchPlant() {
+      const name = document.getElementById("plantName").value.trim();
+      if (!name) {
+        alert("Please enter a plant name!");
+        return;
+      }
+
+      const proxy = "https://cors-anywhere.herokuapp.com/"; // proxy for testing
+      const url = `https://trefle.io/api/v1/plants/search?token=YkrCN18rqEBjNi8HdoT30oSLyGH0sv2XBbWEkVx6bsf0fwCnUO&q=${name}`;
+
+      try {
+        const response = await fetch(proxy + url);
+        const data = await response.json();
+        console.log(data);
+
+        const output = document.getElementById("output");
+        if (data.data && data.data.length > 0) {
+          const plant = data.data[0]; // first matching plant
+          output.innerHTML = `
+            <h3>🌿 ${plant.common_name || "No common name"}</h3>
+            <p><b>Scientific name:</b> ${plant.scientific_name}</p>
+            <p><b>Family:</b> ${plant.family_common_name || "N/A"}</p>
+            ${plant.image_url ? `<img src="${plant.image_url}" alt="${plant.common_name}">` : "<p>No image available</p>"}
+          `;
+        } else {
+          output.innerHTML = "<p>No plant found. Try another name.</p>";
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("output").innerHTML = "<p>Failed to fetch plant details.</p>";
+      }
+    }
+  </script>
+</body>
+</html>

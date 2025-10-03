@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚀 Space Flight & Rocket Tracker</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f7fc;
+    margin: 0;
+    color: #333;
+  }
+  header {
+    background: #4a90e2;
+    color: #fff;
+    padding: 25px 20px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  header h1 { margin: 5px 0; font-size: 2.2rem; letter-spacing: 1px; }
+  header p { font-size: 1rem; opacity: 0.9; }
+
+  .search-bar {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .search-bar input {
+    padding: 10px 15px;
+    width: 300px;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 16px;
+  }
+  .search-bar button {
+    margin-left: 10px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: none;
+    background: #4a90e2;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .tabs { display: flex; justify-content: center; margin: 15px 0; }
+  .tabs button {
+    margin: 5px; padding: 10px 25px; border: none; background: #e0e0e0;
+    cursor: pointer; border-radius: 30px; font-weight: bold;
+    color: #555; transition: all 0.3s;
+  }
+  .tabs button.active { background: #4a90e2; color: #fff; transform: scale(1.05); }
+
+  .container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 20px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    position: relative;
+  }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
+  .card img { width: 100%; height: 200px; object-fit: cover; border-radius: 15px; margin-bottom: 12px; transition: transform 0.3s; }
+  .card img:hover { transform: scale(1.03); }
+  .card h3 { margin: 8px 0; color: #4a90e2; font-size: 1.2rem; }
+  .card p { margin: 4px 0; font-size: 14px; color: #555; }
+
+  .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); overflow: auto; animation: fadeIn 0.3s ease-in-out; }
+  .modal-content { background: #fff; margin: 60px auto; padding: 25px; border-radius: 20px; width: 90%; max-width: 650px; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.2); color: #333; animation: slideIn 0.3s ease-in-out; }
+  .close { color: #4a90e2; position: absolute; right: 25px; top: 20px; font-size: 30px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+  .close:hover { color: #2a6bb8; }
+  .modal img { width: 100%; border-radius: 15px; margin-bottom: 15px; }
+  .modal h2 { margin-top: 0; color: #4a90e2; }
+  .modal p { font-size: 15px; line-height: 1.6; color: #555; }
+  .modal a { color: #4a90e2; font-weight: bold; text-decoration: none; }
+  .modal a:hover { text-decoration: underline; }
+
+  footer { text-align: center; padding: 20px; background: #4a90e2; color: #fff; margin-top: 20px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
+
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+  @keyframes slideIn { from {transform: translateY(-30px);} to {transform: translateY(0);} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Space Flight & Rocket Tracker</h1>
+  <p>Track Upcoming & Past Launches + Search Missions</p>
+</header>
+
+<!-- Search Bar -->
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search launches by name...">
+  <button onclick="searchLaunches()">Search</button>
+</div>
+
+<div class="tabs">
+  <button id="upcomingTab" class="active" onclick="loadLaunches('upcoming')">Upcoming Launches</button>
+  <button id="pastTab" onclick="loadLaunches('past')">Past Launches</button>
+</div>
+
+<div class="container" id="launchContainer">
+  <p style="text-align:center;">Loading launches...</p>
+</div>
+
+<!-- Modal -->
+<div id="launchModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<footer>
+  <p>🌍 Powered by Launch Library 2 & Wikipedia API</p>
+</footer>
+
+<script>
+const API_URL = "https://ll.thespacedevs.com/2.2.0/launch/";
+let currentType = 'upcoming';
+let currentSearch = '';
+
+async function loadLaunches(type='upcoming', search='') {
+  currentType = type;
+  currentSearch = search;
+  const container = document.getElementById("launchContainer");
+  container.innerHTML = "<p style='text-align:center;'>Loading...</p>";
+  let url = `${API_URL}${type==='upcoming'?'upcoming':'previous'}/?limit=20&ordering=net`;
+  if(search) url += `&search=${encodeURIComponent(search)}`;
+
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Network response not ok');
+    const data = await res.json();
+    if(!data.results || data.results.length === 0){
+      container.innerHTML = "<p style='text-align:center;'>No launches found.</p>";
+      return;
+    }
+    displayLaunches(data.results);
+  } catch(err){
+    console.error(err);
+    container.innerHTML = "<p style='text-align:center;'>Unable to fetch launches. Check your network or API endpoint.</p>";
+  }
+
+  document.getElementById("upcomingTab").classList.toggle("active", type==='upcoming');
+  document.getElementById("pastTab").classList.toggle("active", type==='past');
+}
+
+function searchLaunches(){
+  const query = document.getElementById("searchInput").value.trim();
+  loadLaunches(currentType, query);
+}
+
+function displayLaunches(launches){
+  const container = document.getElementById("launchContainer");
+  container.innerHTML = "";
+  launches.forEach(launch=>{
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML += `
+      <img src="${launch.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="Launch Image">
+      <h3>${launch.name}</h3>
+      <p><b>Date:</b> ${new Date(launch.net).toLocaleString()}</p>
+      <p><b>Rocket:</b> ${launch.rocket?.configuration?.name || "N/A"}</p>
+    `;
+    card.addEventListener("click", () => openModal(launch));
+    container.appendChild(card);
+  });
+}
+
+async function openModal(launch){
+  const modal = document.getElementById("launchModal");
+  const modalBody = document.getElementById("modalBody");
+  modalBody.innerHTML = `<p>Loading details...</p>`;
+  modal.style.display = "block";
+
+  let wikiHTML = `<p>No Wikipedia info found.</p>`;
+  try{
+    const res = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&list=search&srsearch=${encodeURIComponent(launch.name)}&format=json`);
+    const data = await res.json();
+    if(data.query.search.length > 0){
+      const item = data.query.search[0];
+      wikiHTML = `
+        <p><b>Wikipedia:</b> ${item.snippet.replace(/<\/?[^>]+(>|$)/g, "")}...</p>
+        <p><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(item.title)}" target="_blank">📖 Read More</a></p>
+      `;
+    }
+  } catch(err){ console.error(err); }
+
+  modalBody.innerHTML = `
+    <h2>${launch.name}</h2>
+    <img src="${launch.image || 'https://via.placeholder.com/400x200?text=No+Image'}">
+    <p><b>Date & Time:</b> ${new Date(launch.net).toLocaleString()}</p>
+    <p><b>Rocket:</b> ${launch.rocket?.configuration?.name || "N/A"}</p>
+    <p><b>Agency:</b> ${launch.launch_service_provider?.name || "N/A"}</p>
+    <p><b>Location:</b> ${launch.pad?.name || "Unknown"}</p>
+    <p><b>Status:</b> ${launch.status?.name || "N/A"}</p>
+    ${launch.vidURLs && launch.vidURLs.length ? `<p><a href="${launch.vidURLs[0]}" target="_blank">🎥 Watch Video</a></p>` : ""}
+    ${wikiHTML}
+  `;
+}
+
+function closeModal(){ document.getElementById("launchModal").style.display = "none"; }
+window.onclick = function(event){ if(event.target === document.getElementById("launchModal")) closeModal(); }
+
+loadLaunches('upcoming');
+</script>
+</body>
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Earthquake & Natural Disaster Monitor</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --muted: #9fb3c8;
+      --text: #e6eef6;
+      --accent: #4da3ff;
+      --ok: #34c759;
+      --warn: #ffcc00;
+      --bad: #ff3b30;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% -10%, #0f1b2e 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: grid;
+      gap: 8px;
+      padding: 14px 16px;
+      background: rgba(18, 26, 43, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.3px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .control {
+      background: #0f1627;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px;
+      border-radius: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    select,
+    input[type="number"],
+    input[type="checkbox"],
+    button {
+      width: 100%;
+      background: #0b1322;
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid #2a7ade;
+      background: linear-gradient(180deg, #1c2942, #15243d);
+      transition: transform .08s ease, box-shadow .08s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(77, 163, 255, 0.2);
+    }
+
+    #map {
+      height: 60vh;
+      width: 100%;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 12px 16px 24px;
+    }
+
+    .panels {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .panel h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .list {
+      max-height: 36vh;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    .item {
+      padding: 10px;
+      border-radius: 12px;
+      background: #0e1728;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .title {
+      font-weight: 600;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .pill.bad {
+      border-color: rgba(255, 59, 48, 0.4);
+    }
+
+    .pill.warn {
+      border-color: rgba(255, 204, 0, 0.4);
+    }
+
+    .pill.ok {
+      border-color: rgba(52, 199, 89, 0.4);
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: .8rem;
+      color: var(--muted)
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .foot {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🌍 Earthquake & Natural Disaster Monitor</h1>
+    <div class="controls">
+      <div class="control">
+        <label for="eqWindow">Earthquake Time Window</label>
+        <select id="eqWindow">
+          <option value="hour">Past Hour</option>
+          <option value="day" selected>Past Day</option>
+          <option value="week">Past 7 Days</option>
+          <option value="month">Past 30 Days</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="minMag">Minimum Magnitude</label>
+        <input type="number" id="minMag" min="0" max="10" step="0.1" value="2.5" />
+      </div>
+      <div class="control">
+        <label for="autoRefresh">Auto Refresh (minutes)</label>
+        <select id="autoRefresh">
+          <option value="0" selected>Off</option>
+          <option value="1">1</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Disaster Sources</label>
+        <div style="display:grid; gap:6px;">
+          <label><input type="checkbox" id="toggleEONET" checked /> NASA EONET (open events)</label>
+          <label><input type="checkbox" id="toggleUSGS" checked /> USGS Earthquakes</label>
+        </div>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div style="display:flex; gap:8px;">
+          <button id="refreshBtn">🔄 Refresh Now</button>
+          <button id="fitBtn" title="Zoom to data">🗺️ Fit</button>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <div><span class="dot" style="background:#4caf50"></span> M < 3</div>
+          <div><span class="dot" style="background:#ffc107"></span> 3–5</div>
+          <div><span class="dot" style="background:#ff9800"></span> 5–6</div>
+          <div><span class="dot" style="background:#f44336"></span> 6+</div>
+      </div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+    <div class="panels">
+      <section class="panel">
+        <h3>Recent Earthquakes <span id="eqCount" class="pill"></span></h3>
+        <div id="eqList" class="list"></div>
+      </section>
+      <section class="panel">
+        <h3>Open Disasters (NASA EONET) <span id="disCount" class="pill"></span></h3>
+        <div id="disList" class="list"></div>
+      </section>
+      <section class="panel">
+        <h3>About</h3>
+        <p class="foot">Data sources: <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
+            target="_blank" rel="noreferrer">USGS Earthquake GeoJSON</a> and <a href="https://eonet.gsfc.nasa.gov/"
+            target="_blank" rel="noreferrer">NASA EONET v3</a>. All times shown in your local timezone.</p>
+      </section>
+    </div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // --- Map setup ---
+    const map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 11,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let eqLayer = L.layerGroup().addTo(map);
+    let disLayer = L.layerGroup().addTo(map);
+
+    const eqCountEl = document.getElementById('eqCount');
+    const disCountEl = document.getElementById('disCount');
+    const eqListEl = document.getElementById('eqList');
+    const disListEl = document.getElementById('disList');
+
+    const eqWindowEl = document.getElementById('eqWindow');
+    const minMagEl = document.getElementById('minMag');
+    const autoRefreshEl = document.getElementById('autoRefresh');
+    const toggleEONETEl = document.getElementById('toggleEONET');
+    const toggleUSGSEl = document.getElementById('toggleUSGS');
+
+    const refreshBtn = document.getElementById('refreshBtn');
+    const fitBtn = document.getElementById('fitBtn');
+
+    let autoTimer = null;
+
+    function fmtTime(ms) {
+      const d = new Date(ms);
+      return d.toLocaleString();
+    }
+
+    function magColor(m) {
+      if (m >= 6) return '#f44336';
+      if (m >= 5) return '#ff9800';
+      if (m >= 3) return '#ffc107';
+      return '#4caf50';
+    }
+
+    function addEqItem(f) {
+      const { mag, place, time, url } = f.properties;
+      const depth = f.geometry && f.geometry.coordinates ? f.geometry.coordinates[2] : null;
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.innerHTML = `
+        <div class="row">
+          <div class="title">M ${mag?.toFixed?.(1) ?? '—'} • ${place || 'Unknown'}</div>
+          <span class="pill" style="border-color:${magColor(mag)}88">${fmtTime(time)}</span>
+        </div>
+        <div class="sub">Depth: ${depth != null ? depth.toFixed(1) + ' km' : '—'}${url ? ` • <a href="${url}" target="_blank">USGS</a>` : ''}</div>
+      `;
+      el.addEventListener('click', () => {
+        const [lon, lat] = f.geometry.coordinates;
+        map.flyTo([lat, lon], 6, { duration: 0.6 });
+      });
+      eqListEl.appendChild(el);
+    }
+
+    function addDisItem(ev) {
+      const el = document.createElement('div');
+      const cat = ev.categories?.[0]?.title || 'Event';
+      const src = ev.sources?.[0]?.url;
+      el.className = 'item';
+      el.innerHTML = `
+        <div class="row">
+          <div class="title">${cat}: ${ev.title}</div>
+          <span class="pill warn">Open</span>
+        </div>
+        <div class="sub">Updated: ${fmtTime(ev.geometry?.[ev.geometry.length - 1]?.date)}${src ? ` • <a href="${src}" target="_blank">Source</a>` : ''}</div>
+      `;
+      el.addEventListener('click', () => {
+        const g = ev.geometry?.[ev.geometry.length - 1];
+        if (!g) return;
+        if (g.coordinates?.length === 2 && typeof g.coordinates[0] === 'number') {
+          const [lon, lat] = g.coordinates;
+          map.flyTo([lat, lon], 5, { duration: 0.6 });
+        }
+      });
+      disListEl.appendChild(el);
+    }
+
+    async function fetchUSGS(windowKey, minMag) {
+      const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_${windowKey}.geojson`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`USGS error ${res.status}`);
+      const data = await res.json();
+      // Filter by min magnitude
+      const feats = (data.features || []).filter(f => (f.properties?.mag ?? -Infinity) >= minMag);
+      return feats;
+    }
+
+    async function fetchEONET() {
+      // NASA EONET v3 open events
+      const url = 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`EONET error ${res.status}`);
+      const data = await res.json();
+      return data?.events || [];
+    }
+
+    function renderUSGS(features) {
+      eqLayer.clearLayers();
+      eqListEl.innerHTML = '';
+      const group = [];
+      for (const f of features) {
+        const [lon, lat] = f.geometry.coordinates;
+        const mag = f.properties.mag;
+        const c = magColor(mag);
+        const marker = L.circleMarker([lat, lon], {
+          radius: Math.max(4, Math.min(18, mag * 2.2)),
+          color: c, fillColor: c, fillOpacity: 0.6, weight: 1
+        }).bindPopup(`
+          <b>M ${mag?.toFixed?.(1) ?? '—'}</b><br/>
+          ${f.properties.place || 'Unknown location'}<br/>
+          <small>${fmtTime(f.properties.time)}</small><br/>
+          ${f.properties.url ? `<a href="${f.properties.url}" target="_blank">USGS detail</a>` : ''}
+        `);
+        marker.addTo(eqLayer);
+        addEqItem(f);
+        group.push([lat, lon]);
+      }
+      eqCountEl.textContent = features.length + ' events';
+      return group;
+    }
+
+    function renderEONET(events) {
+      disLayer.clearLayers();
+      disListEl.innerHTML = '';
+      const group = [];
+      for (const ev of events) {
+        const latest = ev.geometry?.[ev.geometry.length - 1];
+        if (!latest) continue;
+        // EONET geometry can be Point, Polygon, or LineString; we handle point & polygon centroid
+        let latlon = null;
+        if (Array.isArray(latest.coordinates) && latest.coordinates.length === 2 && typeof latest.coordinates[0] === 'number') {
+          const [lon, lat] = latest.coordinates; latlon = [lat, lon];
+        } else if (Array.isArray(latest.coordinates)) {
+          // Try to compute simple centroid if polygon
+          const flat = latest.coordinates.flat(Infinity).filter(n => typeof n === 'number');
+          for (let i = 0; i < flat.length; i += 2) {
+            const lon = flat[i], lat = flat[i + 1];
+            if (typeof lat === 'number' && typeof lon === 'number') { latlon = [lat, lon]; break; }
+          }
+        }
+        if (!latlon) continue;
+        const marker = L.marker(latlon).bindPopup(`
+          <b>${ev.title}</b><br/>
+          <small>Updated: ${fmtTime(latest.date)}</small><br/>
+          <small>Category: ${ev.categories?.[0]?.title || '—'}</small>
+        `);
+        marker.addTo(disLayer);
+        addDisItem(ev);
+        group.push(latlon);
+      }
+      disCountEl.textContent = events.length + ' events';
+      return group;
+    }
+
+    function fitToData() {
+      const bounds = L.latLngBounds([]);
+      eqLayer.eachLayer(l => bounds.extend(l.getLatLng ? l.getLatLng() : l.getBounds?.()));
+      disLayer.eachLayer(l => bounds.extend(l.getLatLng ? l.getLatLng() : l.getBounds?.()));
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.2), { animate: true });
+      }
+    }
+
+    async function refreshAll() {
+      const windowKey = eqWindowEl.value; // hour|day|week|month
+      const minMag = parseFloat(minMagEl.value) || 0;
+
+      const eqEnabled = toggleUSGSEl.checked;
+      const disEnabled = toggleEONETEl.checked;
+
+      document.body.style.cursor = 'progress';
+      try {
+        let eqPts = [];
+        let disPts = [];
+
+        if (eqEnabled) {
+          const eqFeatures = await fetchUSGS(windowKey, minMag);
+          eqPts = renderUSGS(eqFeatures);
+        } else {
+          eqLayer.clearLayers(); eqListEl.innerHTML = ''; eqCountEl.textContent = 'off';
+        }
+
+        if (disEnabled) {
+          const events = await fetchEONET();
+          disPts = renderEONET(events);
+        } else {
+          disLayer.clearLayers(); disListEl.innerHTML = ''; disCountEl.textContent = 'off';
+        }
+
+        if (eqPts.length + disPts.length > 0) fitToData();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load data: ' + err.message + '\n(If on file://, try using a local server.)');
+      } finally {
+        document.body.style.cursor = 'default';
+      }
+    }
+
+    function setAutoRefresh() {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+      const mins = parseInt(autoRefreshEl.value, 10);
+      if (mins > 0) {
+        autoTimer = setInterval(refreshAll, mins * 60 * 1000);
+      }
+    }
+
+    // Event listeners
+    refreshBtn.addEventListener('click', refreshAll);
+    fitBtn.addEventListener('click', fitToData);
+    [eqWindowEl, minMagEl, toggleEONETEl, toggleUSGSEl].forEach(el => el.addEventListener('change', refreshAll));
+    autoRefreshEl.addEventListener('change', () => { setAutoRefresh(); });
+
+    // Initial load
+    refreshAll();
+    setAutoRefresh();
+  </script>
+</body>
+
+</html>

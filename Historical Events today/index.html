@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📜 Historical Events Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 20px 0;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    #randomEvent {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #ffeaa7;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      font-size: 1.1rem;
+      color: #2d3436;
+    }
+    #controls {
+      margin: 20px auto;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #controls input, #controls button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #controls button {
+      border: none;
+      background-color: #e74c3c;
+      color: white;
+      cursor: pointer;
+    }
+    #tabs {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      gap: 10px;
+    }
+    .tab {
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #ddd;
+      font-weight: bold;
+    }
+    .tab.active {
+      background-color: #4a90e2;
+      color: white;
+    }
+    .section {
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+      text-align: left;
+      padding: 0 20px;
+      display: none; /* Hidden by default, shown via tabs */
+    }
+    .section.active {
+      display: block;
+    }
+    .section h2 {
+      color: #4a90e2;
+      border-bottom: 2px solid #4a90e2;
+      padding-bottom: 5px;
+    }
+    .event {
+      background: white;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .event-year {
+      font-weight: bold;
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <header>📜 Historical Events Viewer</header>
+
+  <div id="randomEvent"><p>Loading random event...</p></div>
+
+  <div id="controls">
+    <input type="date" id="dateInput">
+    <input type="text" id="searchInput" placeholder="Search keyword...">
+    <button onclick="fetchData()">Show History</button>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" onclick="showTab('eventsSection')">Events</div>
+    <div class="tab" onclick="showTab('birthsSection')">Births</div>
+    <div class="tab" onclick="showTab('deathsSection')">Deaths</div>
+  </div>
+
+  <div class="section active" id="eventsSection">
+    <h2>Events</h2>
+    <div id="events"><p>Loading events...</p></div>
+  </div>
+
+  <div class="section" id="birthsSection">
+    <h2>Births</h2>
+    <div id="births"><p>Loading births...</p></div>
+  </div>
+
+  <div class="section" id="deathsSection">
+    <h2>Deaths</h2>
+    <div id="deaths"><p>Loading deaths...</p></div>
+  </div>
+
+  <script>
+    const eventsContainer = document.getElementById('events');
+    const birthsContainer = document.getElementById('births');
+    const deathsContainer = document.getElementById('deaths');
+    const randomEventContainer = document.getElementById('randomEvent');
+
+    let allEvents = [], allBirths = [], allDeaths = [];
+
+    window.onload = fetchData;
+
+    function fetchData() {
+      const dateInput = document.getElementById('dateInput').value;
+      let month, day;
+
+      if(dateInput) {
+        const date = new Date(dateInput);
+        month = date.getMonth() + 1;
+        day = date.getDate();
+      } else {
+        const today = new Date();
+        month = today.getMonth() + 1;
+        day = today.getDate();
+      }
+
+      month = month < 10 ? '0' + month : month;
+      day = day < 10 ? '0' + day : day;
+
+      fetch(`https://history.muffinlabs.com/date/${month}/${day}`)
+        .then(response => response.json())
+        .then(data => {
+          allEvents = data.data.Events;
+          allBirths = data.data.Births;
+          allDeaths = data.data.Deaths;
+
+          showRandomEvent();
+          applySearch();
+        })
+        .catch(error => {
+          randomEventContainer.innerHTML = '<p>Error loading random event.</p>';
+          eventsContainer.innerHTML = '<p>Error loading events.</p>';
+          birthsContainer.innerHTML = '<p>Error loading births.</p>';
+          deathsContainer.innerHTML = '<p>Error loading deaths.</p>';
+          console.error('Error:', error);
+        });
+    }
+
+    function displayItems(items, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      if(items.length === 0) {
+        container.innerHTML = '<p>No data found.</p>';
+        return;
+      }
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'event';
+        div.innerHTML = `<span class="event-year">${item.year}</span>: ${item.text ? item.text : 'No description available'}`;
+        container.appendChild(div);
+      });
+    }
+
+    function applySearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+
+      const filteredEvents = allEvents.filter(e => e.text && e.text.toLowerCase().includes(query));
+      const filteredBirths = allBirths.filter(e => e.text && e.text.toLowerCase().includes(query));
+      const filteredDeaths = allDeaths.filter(e => e.text && e.text.toLowerCase().includes(query));
+
+      displayItems(filteredEvents, 'eventsSection');
+      displayItems(filteredBirths, 'birthsSection');
+      displayItems(filteredDeaths, 'deathsSection');
+    }
+
+    function showRandomEvent() {
+      if(allEvents.length === 0) return;
+      const randomIndex = Math.floor(Math.random() * allEvents.length);
+      const event = allEvents[randomIndex];
+      randomEventContainer.innerHTML = `<strong>Random Event of the Day (${event.year}):</strong> ${event.text ? event.text : 'No description available'}`;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applySearch);
+
+    function showTab(tabId) {
+      ['eventsSection', 'birthsSection', 'deathsSection'].forEach(id => {
+        document.getElementById(id).style.display = id === tabId ? 'block' : 'none';
+      });
+
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+    }
+  </script>
+</body>
+</html>

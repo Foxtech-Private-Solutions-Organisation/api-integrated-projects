@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Finder — Google Books</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#151924; --panel-2:#0f1420; --text:#e6e9f2; --muted:#9aa4b2; --brand:#6ee7b7; --accent:#60a5fa; --ring:#1f2937; --warn:#f59e0b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,system-ui,Arial; background:var(--bg); color:var(--text);}
+    header{position:sticky; top:0; z-index:20; backdrop-filter:saturate(120%) blur(8px); background:linear-gradient(180deg, rgba(21,25,36,.9), rgba(21,25,36,.7)); border-bottom:1px solid #1f2937;}
+    .wrap{max-width:1100px; margin:0 auto; padding:14px 16px;}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    h1{margin:0; font-size:18px; letter-spacing:.2px}
+    .search{display:flex; gap:8px; flex:1}
+    .input{flex:1; background:#0f1420; color:var(--text); border:1px solid #1f2937; border-radius:12px; padding:12px 12px; outline:none; transition:.2s border, .2s box-shadow}
+    .input:focus{border-color:#334155; box-shadow:0 0 0 3px rgba(96,165,250,.15)}
+    .btn{background:linear-gradient(135deg, var(--accent), #7c3aed); color:#fff; border:none; border-radius:12px; padding:12px 14px; font-weight:600; cursor:pointer; transition:.2s transform, .2s box-shadow}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 12px 30px rgba(96,165,250,.2)}
+    .chip{border:1px solid #263246; background:#141a28; color:var(--text); padding:8px 10px; border-radius:999px; cursor:pointer; font-size:12px}
+    .chip[aria-pressed="true"]{background:#1b2335; border-color:#3b82f6}
+
+    main{max-width:1100px; margin:0 auto; padding:14px 16px;}
+    .meta{color:var(--muted); font-size:12px}
+
+    .grid{display:grid; grid-template-columns: repeat( auto-fill, minmax(220px, 1fr) ); gap:16px;}
+    .card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid #1f2937; border-radius:16px; overflow:hidden; display:grid; grid-template-rows: auto 1fr auto; animation:pop .35s ease both}
+    .cover{position:relative; background:#0b0f18; height:300px; display:grid; place-items:center}
+    .cover img{max-width:100%; max-height:100%; object-fit:contain; filter:drop-shadow(0 10px 30px rgba(0,0,0,.4)); transition: transform .3s ease}
+    .card:hover .cover img{transform:scale(1.03)}
+    .content{padding:12px}
+    .title{font-weight:700; font-size:14px; line-height:1.3; margin:0 0 6px}
+    .authors{font-size:12px; color:var(--muted)}
+    .desc{margin-top:8px; font-size:12px; color:#c8d1dc; max-height:3.8em; overflow:hidden}
+    .actions{display:flex; gap:8px; justify-content:space-between; align-items:center; padding:10px; border-top:1px solid #1f2937}
+    .small-btn{font-size:12px; border:1px solid #273246; background:#121827; color:#cfe5ff; border-radius:10px; padding:8px 10px; cursor:pointer}
+    .small-btn:hover{border-color:#3b82f6}
+
+    .skeleton{animation: pulse 1.3s ease-in-out infinite; background:linear-gradient(90deg, #0f1420, #151b28, #0f1420); background-size:200% 100%;}
+    .sk-cover{height:300px}
+    .sk-line{height:12px; margin:8px 0; border-radius:8px}
+
+    .toolbar{display:flex; gap:8px; align-items:center; margin-top:10px}
+    select{background:#0f1420; color:var(--text); border:1px solid #1f2937; border-radius:10px; padding:10px}
+
+    .stars{--rating:0; position:relative; display:inline-block; font-size:14px; line-height:1}
+    .stars::before{content:"★★★★★"; letter-spacing:2px; background: linear-gradient(90deg, #fbbf24 calc(var(--rating) * 20%), #263246 0); -webkit-background-clip:text; background-clip:text; color:transparent}
+    .rating-count{font-size:11px; color:var(--muted); margin-left:6px}
+
+    .footer{display:flex; gap:8px; justify-content:center; align-items:center; margin:20px 0}
+    .page-btn{border:1px solid #273246; background:#101827; color:#cfe5ff; border-radius:10px; padding:10px 12px; cursor:pointer}
+    .page-btn[disabled]{opacity:.4; cursor:not-allowed}
+
+    @keyframes pop{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+    @keyframes pulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .hint{font-size:12px; color:var(--muted)}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.55); z-index:40}
+    .modal.open{display:grid}
+    .modal .box{width:min(820px, 92vw); max-height:82vh; overflow:auto; background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:14px}
+    .box h3{margin:4px 0 8px}
+    .box .row{justify-content:space-between}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="row">
+        <h1>📚 Book Finder</h1>
+        <div class="search">
+          <input class="input" id="q" placeholder="Search by title, author, ISBN…" />
+          <button class="btn" id="searchBtn">Search</button>
+        </div>
+        <div class="toolbar">
+          <label class="hint">Order</label>
+          <select id="orderBy">
+            <option value="relevance">Relevance</option>
+            <option value="newest">Newest</option>
+          </select>
+          <label class="hint">Max</label>
+          <select id="pageSize">
+            <option>12</option>
+            <option>24</option>
+            <option>36</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="meta" id="status">Type a query to begin. Example: <em>Harry Potter</em>, <em>machine learning</em>.</div>
+    <div class="grid" id="grid"></div>
+    <div class="footer">
+      <button class="page-btn" id="prevBtn">⟵ Prev</button>
+      <div class="hint" id="pageInfo"></div>
+      <button class="page-btn" id="nextBtn">Next ⟶</button>
+    </div>
+  </main>
+
+  <!-- Modal for details -->
+  <div class="modal" id="modal">
+    <div class="box">
+      <div class="row">
+        <h3 id="mTitle">Title</h3>
+        <button class="small-btn" id="closeModal">Close</button>
+      </div>
+      <div class="row" style="gap:16px; align-items:flex-start;">
+        <div style="width:180px; flex:0 0 180px; background:#0b0f18; border-radius:10px; display:grid; place-items:center; border:1px solid #1f2937; overflow:hidden">
+          <img id="mCover" alt="Cover" style="max-width:100%; max-height:260px; object-fit:contain" />
+        </div>
+        <div style="flex:1">
+          <div class="meta" id="mAuthors"></div>
+          <div style="margin:8px 0">
+            <span class="stars" id="mStars" style="--rating:0"></span>
+            <span class="rating-count" id="mRatings"></span>
+          </div>
+          <div class="meta" id="mPub"></div>
+          <p id="mDesc" style="white-space:pre-wrap; margin-top:10px"></p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px" id="mLinks"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = { q:'', page:0, pageSize:12, total:0, orderBy:'relevance', items:[] };
+    const grid = document.getElementById('grid');
+    const status = document.getElementById('status');
+    const pageInfo = document.getElementById('pageInfo');
+
+    const GOOGLE_ENDPOINT = 'https://www.googleapis.com/books/v1/volumes';
+
+    function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } }
+
+    function skelCard(){
+      const d = document.createElement('div'); d.className='card';
+      d.innerHTML = `<div class='cover skeleton sk-cover'></div>
+        <div class='content'>
+          <div class='skeleton sk-line' style='width:80%'></div>
+          <div class='skeleton sk-line' style='width:55%'></div>
+          <div class='skeleton sk-line' style='width:95%'></div>
+        </div>
+        <div class='actions'><div class='skeleton sk-line' style='width:60%'></div></div>`; return d;
+    }
+
+    function placeholderCover(){
+      const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='420'><rect width='100%' height='100%' fill='%23121a27'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%239aa4b2' font-family='Inter' font-size='16'>No Cover</text></svg>`);
+      return `data:image/svg+xml;utf8,${svg}`;
+    }
+
+    function ratingTo5(avg){ if(!avg && avg!==0) return 0; const v = Math.max(0, Math.min(5, avg)); return v; }
+
+    function render(items){
+      grid.innerHTML='';
+      if(!items || items.length===0){ grid.innerHTML = `<div class='meta'>No results. Try another query.</div>`; return; }
+      const frag = document.createDocumentFragment();
+      items.forEach(b=>{
+        const v = b.volumeInfo || {}; const s = b.searchInfo || {}; const img = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || placeholderCover();
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <div class='cover'><img src='${img}' alt='${(v.title||'').replace(/'/g,"&apos;")}' onerror="this.src='${placeholderCover()}'"></div>
+          <div class='content'>
+            <h3 class='title'>${v.title || 'Untitled'}</h3>
+            <div class='authors'>${(v.authors||[]).join(', ') || 'Unknown Author'}</div>
+            <div style='margin-top:6px'>
+              <span class='stars' style='--rating:${ratingTo5(v.averageRating)}'></span>
+              <span class='rating-count'>${v.ratingsCount?`(${v.ratingsCount})`:''}</span>
+            </div>
+            <div class='desc'>${(s.textSnippet || v.subtitle || '').replace(/<[^>]*>/g,'')}</div>
+          </div>
+          <div class='actions'>
+            <button class='small-btn' data-act='details'>Details</button>
+            <a class='small-btn' href='${v.previewLink || '#'}' target='_blank' rel='noopener noreferrer'>Preview</a>
+          </div>`;
+        card.querySelector('[data-act="details"]').addEventListener('click',()=> openModal(b));
+        frag.appendChild(card);
+      });
+      grid.appendChild(frag);
+    }
+
+    function updatePager(){
+      const start = state.page*state.pageSize + 1;
+      const end = Math.min(state.total, (state.page+1)*state.pageSize);
+      pageInfo.textContent = state.total?`Showing ${start}–${end} of ${state.total}`:'';
+      document.getElementById('prevBtn').disabled = state.page===0;
+      document.getElementById('nextBtn').disabled = end>=state.total;
+    }
+
+    async function searchBooks(){
+      const q = state.q.trim(); if(!q){ status.textContent='Type a query to begin.'; grid.innerHTML=''; pageInfo.textContent=''; return; }
+      status.textContent = 'Searching…';
+      grid.innerHTML='';
+      for(let i=0;i<Math.min(state.pageSize,8);i++){ grid.appendChild(skelCard()); }
+      try{
+        const params = new URLSearchParams({ q, orderBy: state.orderBy, startIndex: String(state.page*state.pageSize), maxResults: String(state.pageSize) });
+        const url = `${GOOGLE_ENDPOINT}?${params.toString()}`; // Add &key=YOUR_KEY if you have one
+        const res = await fetch(url);
+        const data = await res.json();
+        state.total = data.totalItems || 0;
+        state.items = data.items || [];
+        status.textContent = state.total? `Results for “${q}”` : `No results for “${q}”.`;
+        render(state.items);
+        updatePager();
+      }catch(err){
+        console.error(err);
+        status.textContent = 'Search failed. Please try again.';
+        grid.innerHTML = `<div class='meta'>Network/API error.</div>`;
+      }
+    }
+
+    const debouncedQuery = debounce((val)=>{ state.q = val; state.page=0; searchBooks(); }, 450);
+
+    // Modal
+    function openModal(b){
+      const v = b.volumeInfo || {}; const links = [];
+      const modal = document.getElementById('modal');
+      document.getElementById('mTitle').textContent = v.title || 'Untitled';
+      document.getElementById('mAuthors').textContent = (v.authors||[]).join(', ') || 'Unknown Author';
+      document.getElementById('mStars').style.setProperty('--rating', ratingTo5(v.averageRating));
+      document.getElementById('mRatings').textContent = v.ratingsCount?`(${v.ratingsCount})`:'';
+      document.getElementById('mPub').textContent = [v.publisher, v.publishedDate].filter(Boolean).join(' • ');
+      document.getElementById('mDesc').textContent = v.description || 'No description available.';
+      document.getElementById('mCover').src = v.imageLinks?.thumbnail || v.imageLinks?.small || placeholderCover();
+      const box = document.getElementById('mLinks'); box.innerHTML='';
+      if(v.previewLink) links.push(['Preview', v.previewLink]);
+      if(v.infoLink) links.push(['Info', v.infoLink]);
+      links.forEach(([label,href])=>{ const a=document.createElement('a'); a.href=href; a.target='_blank'; a.rel='noopener'; a.className='small-btn'; a.textContent=label; box.appendChild(a); });
+      modal.classList.add('open');
+    }
+    document.getElementById('closeModal').onclick = ()=> document.getElementById('modal').classList.remove('open');
+    document.getElementById('modal').addEventListener('click', (e)=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('open'); });
+
+    // Events
+    document.getElementById('q').addEventListener('input', (e)=> debouncedQuery(e.target.value));
+    document.getElementById('q').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ state.q = e.target.value; state.page=0; searchBooks(); }});
+    document.getElementById('searchBtn').addEventListener('click', ()=>{ const val=document.getElementById('q').value; state.q=val; state.page=0; searchBooks(); });
+    document.getElementById('orderBy').addEventListener('change', (e)=>{ state.orderBy = e.target.value; state.page=0; searchBooks(); });
+    document.getElementById('pageSize').addEventListener('change', (e)=>{ state.pageSize = parseInt(e.target.value,10) || 12; state.page=0; searchBooks(); });
+    document.getElementById('prevBtn').addEventListener('click', ()=>{ if(state.page>0){ state.page--; searchBooks(); }});
+    document.getElementById('nextBtn').addEventListener('click', ()=>{ state.page++; searchBooks(); });
+
+    // Boot with a sample query
+    (function init(){
+      const sample = 'Harry Potter';
+      document.getElementById('q').value = sample;
+      state.q = sample; searchBooks();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎙️ Podcast Directory & Player</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f4f7fc;
+      color: #333;
+    }
+
+    header {
+      background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #search-container {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #search-input {
+      padding: 12px;
+      width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 25px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    #search-btn {
+      padding: 12px 20px;
+      margin-left: 10px;
+      border: none;
+      background: #2575fc;
+      color: white;
+      cursor: pointer;
+      border-radius: 25px;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    #search-btn:hover {
+      background: #1a5cd8;
+    }
+
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .podcast-card {
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .podcast-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .podcast-card img {
+      width: 100%;
+      border-radius: 15px;
+    }
+
+    .podcast-card h3 {
+      font-size: 18px;
+      margin: 10px 0;
+      color: #444;
+    }
+
+    .podcast-card button {
+      padding: 10px 15px;
+      margin-top: 8px;
+      background: #03a9f4;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s ease;
+    }
+
+    .podcast-card button:hover {
+      background: #0288d1;
+    }
+
+    .episodes {
+      margin-top: 10px;
+      text-align: left;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .episode {
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .episode:hover {
+      background: #e6f0ff;
+    }
+
+    .episode h4 {
+      font-size: 15px;
+      margin: 0;
+      color: #333;
+    }
+
+    /* Fullscreen player overlay */
+    #playerOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 1000;
+      color: white;
+      padding: 20px;
+    }
+
+    #playerOverlay h2 {
+      margin-bottom: 20px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    #playerOverlay audio,
+    #playerOverlay video {
+      width: 80%;
+      max-width: 600px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #closePlayer {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    🎙️ Podcast Directory & Player
+  </header>
+
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Search for podcasts...">
+    <button id="search-btn">Search</button>
+  </div>
+
+  <div id="results"></div>
+
+  <!-- Fullscreen player -->
+  <div id="playerOverlay">
+    <button id="closePlayer">✖</button>
+    <h2 id="episodeTitle"></h2>
+    <div id="episodeMedia"></div>
+  </div>
+
+  <script>
+    const searchBtn = document.getElementById("search-btn");
+    const searchInput = document.getElementById("search-input");
+    const resultsDiv = document.getElementById("results");
+    const playerOverlay = document.getElementById("playerOverlay");
+    const closePlayer = document.getElementById("closePlayer");
+    const episodeTitle = document.getElementById("episodeTitle");
+    const episodeMedia = document.getElementById("episodeMedia");
+
+    searchBtn.addEventListener("click", () => {
+      let query = searchInput.value.trim();
+      if (query) {
+        fetch(`https://itunes.apple.com/search?term=${query}&entity=podcast&limit=10`)
+          .then(res => res.json())
+          .then(data => {
+            resultsDiv.innerHTML = "";
+            if (data.results.length === 0) {
+              resultsDiv.innerHTML = "<p>No podcasts found.</p>";
+              return;
+            }
+            data.results.forEach(podcast => {
+              let card = document.createElement("div");
+              card.classList.add("podcast-card");
+              card.innerHTML = `
+              <img src="${podcast.artworkUrl600}" alt="${podcast.collectionName}">
+              <h3>${podcast.collectionName}</h3>
+              <p><strong>Author:</strong> ${podcast.artistName}</p>
+              <button onclick="loadEpisodes('${podcast.feedUrl}', this)">▶ Show Episodes</button>
+              <div class="episodes"></div>
+            `;
+              resultsDiv.appendChild(card);
+            });
+          })
+          .catch(err => {
+            resultsDiv.innerHTML = "<p>⚠ Error fetching podcasts.</p>";
+            console.error(err);
+          });
+      }
+    });
+
+    function loadEpisodes(feedUrl, btn) {
+      let container = btn.nextElementSibling;
+      container.innerHTML = "<p>Loading episodes...</p>";
+
+      fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.items || data.items.length === 0) {
+            container.innerHTML = "<p>No episodes found.</p>";
+            return;
+          }
+          container.innerHTML = "";
+          data.items.slice(0, 5).forEach(ep => { // show 5 episodes
+            let epDiv = document.createElement("div");
+            epDiv.classList.add("episode");
+            epDiv.innerHTML = `<h4>${ep.title}</h4>`;
+
+            epDiv.addEventListener("click", () => {
+              showPlayer(ep);
+            });
+
+            container.appendChild(epDiv);
+          });
+        })
+        .catch(err => {
+          container.innerHTML = "<p>⚠ Error loading episodes.</p>";
+          console.error(err);
+        });
+    }
+
+    function showPlayer(ep) {
+      episodeTitle.textContent = ep.title;
+      let media = "";
+      if (ep.enclosure && ep.enclosure.type && ep.enclosure.type.startsWith("video")) {
+        media = `
+        <video controls autoplay>
+          <source src="${ep.enclosure.link}" type="${ep.enclosure.type}">
+          Your browser does not support the video element.
+        </video>
+      `;
+      } else {
+        media = `
+        <audio controls autoplay>
+          <source src="${ep.enclosure.link}" type="${ep.enclosure?.type || 'audio/mpeg'}">
+          Your browser does not support the audio element.
+        </audio>
+      `;
+      }
+      episodeMedia.innerHTML = media;
+      playerOverlay.style.display = "flex";
+    }
+
+    closePlayer.addEventListener("click", () => {
+      playerOverlay.style.display = "none";
+      episodeMedia.innerHTML = "";
+    });
+  </script>
+
+</body>
+
+</html>

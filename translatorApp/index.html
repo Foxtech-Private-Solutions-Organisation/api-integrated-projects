@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Translator App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #89f7fe, #66a6ff);
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    h1 {
+      color: #222;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      background: #ffffffcc;
+      backdrop-filter: blur(5px);
+      max-width: 650px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    textarea, select, button {
+      width: 90%;
+      max-width: 500px;
+      margin: 10px auto;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      display: block;
+      transition: 0.3s;
+    }
+
+    textarea {
+      resize: none;
+      box-shadow: inset 2px 2px 6px rgba(0,0,0,0.1);
+    }
+
+    button {
+      background: linear-gradient(45deg, #007bff, #00d4ff);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+
+    button:hover {
+      background: linear-gradient(45deg, #0056b3, #0095ff);
+      transform: scale(1.05);
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      min-height: 60px;
+    }
+
+    .features {
+      margin-top: 20px;
+    }
+
+    .features button {
+      width: auto;
+      margin: 5px;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .history {
+      margin-top: 20px;
+      text-align: left;
+      background: #fafafa;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .history h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .history p {
+      margin: 5px 0;
+      font-size: 14px;
+      background: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 🌙 Dark Mode */
+    .dark {
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: #eee;
+    }
+
+    .dark .container {
+      background: #222831cc;
+      color: #eee;
+    }
+
+    .dark textarea, 
+    .dark select, 
+    .dark button {
+      background: #333;
+      color: #eee;
+      border: 1px solid #666;
+    }
+
+    .dark .result {
+      background: #444;
+      color: #fff;
+    }
+
+    .dark .history {
+      background: #333;
+      color: #eee;
+    }
+
+    .dark .history p {
+      background: #444;
+      color: #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌍 Translator App</h1>
+
+  <div class="container">
+    <textarea id="inputText" rows="4" placeholder="Enter text..."></textarea>
+    <p id="wordCount">Word count: 0</p>
+
+    <select id="langSelect">
+      <option value="ta">Tamil</option>
+      <option value="hi">Hindi</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="es">Spanish</option>
+      <option value="zh">Chinese</option>
+      <option value="ar">Arabic</option>
+    </select>
+
+    <button onclick="translateText()">Translate</button>
+
+    <div class="result" id="output">Your translation will appear here...</div>
+
+    <div class="features">
+      <button onclick="copyText()">📋 Copy</button>
+      <button onclick="speakText()">🔊 Listen</button>
+      <button onclick="toggleMode()">🌙 Dark/Light</button>
+    </div>
+
+    <div class="history" id="historyBox">
+      <h3>📜 Translation History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    const inputText = document.getElementById("inputText");
+    const output = document.getElementById("output");
+    const langSelect = document.getElementById("langSelect");
+    const wordCount = document.getElementById("wordCount");
+    const historyList = document.getElementById("historyList");
+
+    let history = [];
+
+    // ✅ Update word count
+    inputText.addEventListener("input", () => {
+      const words = inputText.value.trim().split(/\s+/).filter(w => w.length > 0);
+      wordCount.textContent = "Word count: " + words.length;
+    });
+
+    // ✅ Translate using MyMemory API
+    async function translateText() {
+      let text = inputText.value.trim();
+      let targetLang = langSelect.value;
+      if (!text) {
+        output.innerText = "⚠️ Please enter text!";
+        return;
+      }
+      output.innerText = "⏳ Translating...";
+      try {
+        let res = await fetch(
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`
+        );
+        let data = await res.json();
+        let translated = data.responseData.translatedText;
+        output.innerText = translated;
+
+        // ✅ Save to history (max 5)
+        history.unshift(`"${text}" ➡️ "${translated}"`);
+        if (history.length > 5) history.pop();
+
+        renderHistory();
+      } catch (error) {
+        output.innerText = "❌ Error: Could not translate!";
+      }
+    }
+
+    // ✅ Copy translated text
+    function copyText() {
+      navigator.clipboard.writeText(output.innerText);
+      alert("✅ Copied to clipboard!");
+    }
+
+    // ✅ Speak translation
+    function speakText() {
+      let speech = new SpeechSynthesisUtterance(output.innerText);
+      speech.lang = langSelect.value;
+      window.speechSynthesis.speak(speech);
+    }
+
+    // ✅ Dark/Light mode toggle
+    function toggleMode() {
+      document.body.classList.toggle("dark");
+    }
+
+    // ✅ Render History
+    function renderHistory() {
+      historyList.innerHTML = "";
+      history.forEach(item => {
+        let p = document.createElement("p");
+        p.innerText = item;
+        historyList.appendChild(p);
+      });
+    }
+  </script>
+</body>
+</html>

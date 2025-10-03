@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌱 Plant Encyclopedia</title>
+  <style>
+    /* Animated gradient background */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(-45deg, #a8e6cf, #dcedc1, #ffd3b6, #ffaaa5);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #2e8b57, #3cb371);
+      color: white;
+      padding: 25px 15px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+    }
+
+    /* Theme toggle */
+    #toggle-theme {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 50px;
+      background: white;
+      color: #2e8b57;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s;
+    }
+
+    #toggle-theme:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Search */
+    #search-container {
+      margin: 25px auto;
+      text-align: center;
+    }
+
+    #search-input {
+      padding: 10px;
+      width: 280px;
+      border-radius: 50px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    #search-input:focus {
+      border-color: #2e8b57;
+      box-shadow: 0 0 10px rgba(46, 139, 87, 0.4);
+    }
+
+    #search-btn {
+      padding: 10px 20px;
+      margin-left: 8px;
+      background: #2e8b57;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    #search-btn:hover {
+      background: #276b45;
+      transform: scale(1.05);
+    }
+
+    /* Plant Grid */
+    #plant-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 25px;
+      padding: 25px;
+    }
+
+    /* Plant Card */
+    .plant-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      border-radius: 20px;
+      padding: 20px;
+      background: linear-gradient(145deg, #ffffff, #e0f2f1);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    }
+
+    .plant-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
+      background: linear-gradient(145deg, #d0f0e5, #c0e6da);
+    }
+
+    .plant-card img {
+      width: 130px;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 20px;
+      border: 2px solid #2e8b57;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+    }
+
+    .plant-card img:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    .plant-card-content {
+      flex: 1;
+    }
+
+    .plant-card-content h3 {
+      margin: 0 0 10px;
+      color: #2e8b57;
+      font-size: 22px;
+      letter-spacing: 0.5px;
+    }
+
+    .plant-card-content section {
+      margin-bottom: 12px;
+    }
+
+    .plant-card-content section h4 {
+      margin: 5px 0;
+      font-size: 15px;
+      color: #444;
+    }
+
+    .plant-card-content p {
+      font-size: 14px;
+      color: #555;
+      text-align: justify;
+      line-height: 1.5;
+    }
+
+    .plant-card-content a {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 6px 14px;
+      text-decoration: none;
+      color: white;
+      background: #2e8b57;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .plant-card-content a:hover {
+      background: #276b45;
+      transform: scale(1.05);
+    }
+
+    /* Dark Mode */
+    body.dark {
+      background: linear-gradient(-45deg, #1a1a1a, #222222, #333333, #111111);
+      color: #ddd;
+    }
+
+    body.dark header {
+      background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
+      color: #eee;
+    }
+
+    body.dark #toggle-theme {
+      background: #2e8b57;
+      color: white;
+    }
+
+    body.dark .plant-card {
+      background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+      box-shadow: 0 8px 20px rgba(255, 255, 255, 0.05);
+      color: #ddd;
+    }
+
+    body.dark .plant-card-content section h4 {
+      color: #bbb;
+    }
+
+    body.dark .plant-card-content a {
+      color: #90ee90;
+      background: #2e8b57;
+    }
+
+    /* Gradient Animation Keyframes */
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🌿 Plant Encyclopedia</h1>
+    <p>Search plants and learn about their life, cycle, and water needs (Wikipedia powered)</p>
+    <button id="toggle-theme">🌙 Dark</button>
+  </header>
+
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Enter plant name...">
+    <button id="search-btn">Search</button>
+  </div>
+
+  <div id="plant-list"></div>
+
+  <script>
+    const plantList = document.getElementById("plant-list");
+    const searchBtn = document.getElementById("search-btn");
+    const themeBtn = document.getElementById("toggle-theme");
+
+    // Theme Toggle
+    themeBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      themeBtn.textContent = document.body.classList.contains("dark") ? "☀️ Light" : "🌙 Dark";
+    });
+
+    // Check if page is plant
+    function isPlant(description) {
+      if (!description) return false;
+      const plantKeywords = ["plant", "tree", "flower", "herb", "shrub", "grass"];
+      return plantKeywords.some(keyword => description.toLowerCase().includes(keyword));
+    }
+
+    // Search plants
+    async function searchPlants(query) {
+      plantList.innerHTML = "<p>Loading...</p>";
+      try {
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+
+        if (!searchData.query.search.length) {
+          plantList.innerHTML = "<p>No plants found.</p>";
+          return;
+        }
+
+        plantList.innerHTML = "";
+        let count = 0;
+
+        for (let i = 0; i < searchData.query.search.length && count < 5; i++) {
+          const pageTitle = searchData.query.search[i].title;
+          const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+          const summaryRes = await fetch(summaryUrl);
+          const data = await summaryRes.json();
+          if (!isPlant(data.description)) continue;
+
+          const imageUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=600&origin=*`;
+          const imageRes = await fetch(imageUrl);
+          const imageData = await imageRes.json();
+          const pageKey = Object.keys(imageData.query.pages)[0];
+          const bigImage = imageData.query.pages[pageKey].thumbnail?.source;
+          const imgUrl = bigImage || data.thumbnail?.source || "https://via.placeholder.com/130?text=No+Image";
+
+          const plantCard = document.createElement("div");
+          plantCard.classList.add("plant-card");
+          plantCard.innerHTML = `
+        <img src="${imgUrl}" alt="${data.title}">
+        <div class="plant-card-content">
+          <h3>${data.title}</h3>
+          <section>
+            <h4>🌱 Scientific Name</h4>
+            <p>${data.description || "Not available"}</p>
+          </section>
+          <section>
+            <h4>📖 Description</h4>
+            <p>${data.extract || "No description available."}</p>
+          </section>
+          <a href="${data.content_urls?.desktop?.page}" target="_blank">🌐 Read Full Article</a>
+        </div>
+      `;
+          plantList.appendChild(plantCard);
+          count++;
+        }
+
+        if (plantList.innerHTML === "") {
+          plantList.innerHTML = "<p>No plant-related pages found.</p>";
+        }
+
+      } catch (error) {
+        plantList.innerHTML = "<p>Error fetching plant data.</p>";
+        console.error(error);
+      }
+    }
+
+    searchBtn.addEventListener("click", () => {
+      const query = document.getElementById("search-input").value;
+      if (query.trim() !== "") searchPlants(query);
+    });
+  </script>
+</body>
+
+</html>

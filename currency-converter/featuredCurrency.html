@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Currency Converter</title>
+  <style>
+    :root{
+      --bg:#fff8f0;
+      --card:#fff3e0;
+      --accent:#F97A00;
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.8);
+      --radius:12px;
+      color-scheme: light;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg, #fff4e5 0%, #ffe0b2 100%);
+      color:#333;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:100%;
+      max-width:520px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));
+      border-radius:var(--radius);
+      padding:20px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.1);
+      backdrop-filter:blur(6px);
+    }
+    h1{margin:0 0 20px;font-size:22px;text-align:center;color:var(--accent);}
+    .row{
+      display:flex;
+      gap:10px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    input, button{
+      padding:12px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.1);
+      font-size:15px;
+      outline:none;
+    }
+    input{
+      flex:1;
+      min-width:120px;
+      background:var(--glass);
+      color:#333;
+      border:1px solid rgba(0,0,0,0.2);
+    }
+    button{
+      flex:1;
+      min-width:120px;
+      background:var(--accent);
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      border:none;
+      transition:0.3s;
+    }
+    button:hover{
+      opacity:0.85;
+    }
+    .swap-btn{
+      flex:0 0 40px;
+      background:#ffb74d;
+      font-weight:bold;
+      text-align:center;
+      cursor:pointer;
+    }
+    .result{
+      margin-top:16px;
+      padding:16px;
+      border-radius:10px;
+      background:#ffe6cc;
+      font-size:16px;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .copy-btn{
+      background:var(--accent);
+      border:none;
+      color:#fff;
+      padding:6px 12px;
+      font-size:14px;
+      cursor:pointer;
+      border-radius:5px;
+      transition:0.3s;
+    }
+    .copy-btn:hover{
+      opacity:0.85;
+    }
+    .muted{color:var(--muted);font-size:13px;margin-top:6px}
+
+    /* Custom Dropdown */
+    .custom-select{
+      position: relative;
+      flex:1;
+      min-width:120px;
+      border-radius:10px;
+      background:linear-gradient(180deg, #fff3e0, #fff0d1);
+      cursor:pointer;
+      padding:12px;
+      user-select:none;
+    }
+    .custom-select .selected{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .custom-select .options{
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:#fff3e0;
+      max-height:200px;
+      overflow-y:auto;
+      border:1px solid rgba(0,0,0,0.2);
+      border-radius:0 0 10px 10px;
+      display:none;
+      z-index:100;
+    }
+    .custom-select .options div{
+      padding:10px;
+    }
+    .custom-select .options div:hover{
+      background:rgba(249,122,0,0.2);
+    }
+
+    @media(max-width:480px){
+      .row{flex-direction:column;}
+      input, button, .custom-select{flex:1;}
+      .swap-btn{flex:1;}
+      .result{flex-direction:column; gap:10px;}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>💱 Currency Converter</h1>
+    <div class="row">
+      <input type="number" id="amount" value="1" min="0" step="0.01">
+    </div>
+    <div class="row">
+      <div class="custom-select" id="fromDropdown"></div>
+      <div class="swap-btn" id="swapBtn">⇄</div>
+      <div class="custom-select" id="toDropdown"></div>
+    </div>
+    <div class="row">
+      <button id="convertBtn">Convert</button>
+    </div>
+    <div class="result" id="resultBox">
+      Enter amount and select currencies
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = 'https://api.frankfurter.app';
+    const amountEl = document.getElementById('amount');
+    const resultBox = document.getElementById('resultBox');
+    const btn = document.getElementById('convertBtn');
+    const swapBtn = document.getElementById('swapBtn');
+
+    let currencies = [];
+    let fromCurrency = 'USD';
+    let toCurrency = 'INR';
+
+    function createCustomDropdown(containerId, items, defaultValue, onChange){
+      const container = document.getElementById(containerId);
+      container.innerHTML = `<div class="selected">${defaultValue} ▼</div><div class="options"></div>`;
+      const optionsDiv = container.querySelector('.options');
+
+      items.forEach(item=>{
+        const opt = document.createElement('div');
+        opt.textContent = item;
+        opt.addEventListener('click', ()=>{
+          container.querySelector('.selected').textContent = item + ' ▼';
+          optionsDiv.style.display='none';
+          onChange(item.split(' — ')[0]);
+        });
+        optionsDiv.appendChild(opt);
+      });
+
+      container.querySelector('.selected').addEventListener('click', ()=>{
+        optionsDiv.style.display = optionsDiv.style.display==='block' ? 'none':'block';
+      });
+    }
+
+    async function loadSymbols(){
+      try {
+        const res = await fetch(API_BASE + '/currencies');
+        const data = await res.json();
+        currencies = Object.keys(data).sort().map(code=>`${code} — ${data[code]}`);
+        createCustomDropdown('fromDropdown', currencies, 'USD — US Dollar', val=> fromCurrency=val);
+        createCustomDropdown('toDropdown', currencies, 'INR — Indian Rupee', val=> toCurrency=val);
+      } catch(err){
+        console.error(err);
+        resultBox.textContent = '⚠️ Failed to load currencies.';
+      }
+    }
+
+    async function convert(){
+      const amt = parseFloat(amountEl.value) || 0;
+      if(!fromCurrency || !toCurrency){
+        resultBox.textContent = 'Select currencies.';
+        return;
+      }
+
+      // same currency case
+      if(fromCurrency === toCurrency){
+        showResult(amt, amt);
+        return;
+      }
+
+      resultBox.textContent = '⏳ Converting...';
+
+      try{
+        const res = await fetch(`${API_BASE}/latest?amount=${amt}&from=${fromCurrency}&to=${toCurrency}`);
+        if(!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        const converted = data.rates[toCurrency].toFixed(2);
+        showResult(amt, converted, data.date);
+      }catch(err){
+        console.error(err);
+        resultBox.textContent = '⚠️ Conversion failed.';
+      }
+    }
+
+    function showResult(amount, converted, date=null){
+      resultBox.innerHTML = `
+        <div>${amount} ${fromCurrency} = ${converted} ${toCurrency}${date ? `<div class="muted">Rates date: ${date}</div>` : ''}</div>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      `;
+      document.getElementById('copyBtn').addEventListener('click', copyResult);
+    }
+
+    function copyResult(){
+      const text = resultBox.querySelector('div').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Copied to clipboard!');
+    }
+
+    function swapCurrencies(){
+      [fromCurrency, toCurrency] = [toCurrency, fromCurrency];
+      const fromSel = document.querySelector('#fromDropdown .selected');
+      const toSel = document.querySelector('#toDropdown .selected');
+      [fromSel.textContent, toSel.textContent] = [toSel.textContent, fromSel.textContent];
+    }
+
+    btn.addEventListener('click', convert);
+    swapBtn.addEventListener('click', swapCurrencies);
+
+    loadSymbols();
+  </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌍 Global COVID-19 Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #2d89ef;
+      color: white;
+      padding: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+    .container {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: scale(1.01);
+    }
+    .card h2 {
+      margin: 0 0 15px;
+      font-size: 22px;
+      color: #2d89ef;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    .stat {
+      background: #eef3ff;
+      margin: 10px;
+      padding: 15px;
+      border-radius: 10px;
+      flex: 1 1 30%;
+      min-width: 140px;
+    }
+    .stat h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #444;
+    }
+    .stat p {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 8px 0 0;
+      color: #2d89ef;
+    }
+    select, input, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin: 10px 5px;
+    }
+    button {
+      background: #2d89ef;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #1b5faf;
+    }
+    canvas {
+      margin-top: 20px;
+      max-width: 100%;
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <header>🌍 Global COVID-19 Tracker</header>
+  <div class="container">
+    <!-- Current Global Data -->
+    <div class="card">
+      <h2>Global Current Statistics</h2>
+      <div class="stats" id="globalStats"></div>
+    </div>
+
+    <!-- Current Country Data -->
+    <div class="card">
+      <h2>Country Current Statistics</h2>
+      <select id="countrySelect"></select>
+      <div class="stats" id="countryStats"></div>
+    </div>
+
+    <!-- Past Data Search -->
+    <div class="card">
+      <h2>Search Past Data</h2>
+      <select id="countryHistory"></select>
+      <input type="date" id="dateInput">
+      <button onclick="searchHistory()">Search</button>
+      <div class="stats" id="historyStats"></div>
+    </div>
+
+    <!-- Historical Graph -->
+    <div class="card">
+      <h2>📈 Past 30 Days Trend</h2>
+      <canvas id="historyChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const globalStatsDiv = document.getElementById("globalStats");
+    const countryStatsDiv = document.getElementById("countryStats");
+    const countrySelect = document.getElementById("countrySelect");
+    const countryHistory = document.getElementById("countryHistory");
+    const historyStatsDiv = document.getElementById("historyStats");
+    let historyChart;
+
+    const formatNumber = num => num ? num.toLocaleString() : "0";
+
+    // Fetch Global Data
+    async function fetchGlobalData() {
+      let res = await fetch("https://disease.sh/v3/covid-19/all");
+      let data = await res.json();
+      globalStatsDiv.innerHTML = `
+        <div class="stat"><h3>Total Cases</h3><p>${formatNumber(data.cases)}</p></div>
+        <div class="stat"><h3>Active</h3><p>${formatNumber(data.active)}</p></div>
+        <div class="stat"><h3>Deaths</h3><p>${formatNumber(data.deaths)}</p></div>
+        <div class="stat"><h3>Recovered</h3><p>${formatNumber(data.recovered)}</p></div>
+        <div class="stat"><h3>Today Cases</h3><p>${formatNumber(data.todayCases)}</p></div>
+        <div class="stat"><h3>Today Deaths</h3><p>${formatNumber(data.todayDeaths)}</p></div>
+        <div class="stat"><h3>Today Recovered</h3><p>${formatNumber(data.todayRecovered)}</p></div>
+      `;
+    }
+
+    // Fetch Countries
+    async function fetchCountries() {
+      let res = await fetch("https://disease.sh/v3/covid-19/countries");
+      let data = await res.json();
+      data.forEach(country => {
+        let option1 = document.createElement("option");
+        option1.value = country.country;
+        option1.textContent = country.country;
+        countrySelect.appendChild(option1);
+
+        let option2 = document.createElement("option");
+        option2.value = country.country;
+        option2.textContent = country.country;
+        countryHistory.appendChild(option2);
+      });
+    }
+
+    // Fetch Current Country Data
+    async function fetchCountryData(country) {
+      let res = await fetch(`https://disease.sh/v3/covid-19/countries/${country}`);
+      let data = await res.json();
+      countryStatsDiv.innerHTML = `
+        <div class="stat"><h3>Total Cases</h3><p>${formatNumber(data.cases)}</p></div>
+        <div class="stat"><h3>Active</h3><p>${formatNumber(data.active)}</p></div>
+        <div class="stat"><h3>Deaths</h3><p>${formatNumber(data.deaths)}</p></div>
+        <div class="stat"><h3>Recovered</h3><p>${formatNumber(data.recovered)}</p></div>
+        <div class="stat"><h3>Today Cases</h3><p>${formatNumber(data.todayCases)}</p></div>
+        <div class="stat"><h3>Today Deaths</h3><p>${formatNumber(data.todayDeaths)}</p></div>
+        <div class="stat"><h3>Today Recovered</h3><p>${formatNumber(data.todayRecovered)}</p></div>
+      `;
+      fetchHistoricalGraph(country);
+    }
+
+    // Search Historical Data (Past)
+    async function searchHistory() {
+      const country = countryHistory.value;
+      const dateInput = document.getElementById("dateInput").value;
+
+      if (!country || !dateInput) {
+        alert("Please select a country and date");
+        return;
+      }
+
+      // Convert yyyy-mm-dd -> M/D/YY
+      const d = new Date(dateInput);
+      const month = d.getUTCMonth() + 1;
+      const day = d.getUTCDate();
+      const year = d.getUTCFullYear().toString().slice(-2);
+      const formattedDate = `${month}/${day}/${year}`;
+
+      let res = await fetch(`https://disease.sh/v3/covid-19/historical/${country}?lastdays=all`);
+      let data = await res.json();
+
+      if (!data.timeline) {
+        historyStatsDiv.innerHTML = `<p>No historical data available</p>`;
+        return;
+      }
+
+      let cases = data.timeline.cases[formattedDate];
+      let deaths = data.timeline.deaths[formattedDate];
+      let recovered = data.timeline.recovered[formattedDate];
+
+      if (cases === undefined) {
+        historyStatsDiv.innerHTML = `<p>No data for this date.</p>`;
+        return;
+      }
+
+      historyStatsDiv.innerHTML = `
+        <div class="stat"><h3>Cases</h3><p>${formatNumber(cases)}</p></div>
+        <div class="stat"><h3>Deaths</h3><p>${formatNumber(deaths)}</p></div>
+        <div class="stat"><h3>Recovered</h3><p>${formatNumber(recovered)}</p></div>
+      `;
+    }
+
+    // Historical Graph (Last 30 Days)
+    async function fetchHistoricalGraph(country) {
+      let res = await fetch(`https://disease.sh/v3/covid-19/historical/${country}?lastdays=30`);
+      let data = await res.json();
+
+      if (!data.timeline) return;
+
+      let labels = Object.keys(data.timeline.cases);
+      let cases = Object.values(data.timeline.cases);
+      let deaths = Object.values(data.timeline.deaths);
+      let recovered = Object.values(data.timeline.recovered);
+
+      if (historyChart) historyChart.destroy();
+
+      let ctx = document.getElementById("historyChart").getContext("2d");
+      historyChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            { label: "Cases", data: cases, borderColor: "#2d89ef", fill: false },
+            { label: "Deaths", data: deaths, borderColor: "#e74c3c", fill: false },
+            { label: "Recovered", data: recovered, borderColor: "#27ae60", fill: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "top" }
+          }
+        }
+      });
+    }
+
+    // Event Listener
+    countrySelect.addEventListener("change", (e) => {
+      fetchCountryData(e.target.value);
+    });
+
+    // Load Data
+    fetchGlobalData();
+    fetchCountries();
+  </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚍 Public Transport Navigator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f7fc;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #0077cc;
+    }
+    .search-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #0077cc;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    .results {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      margin-bottom: 12px;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .card strong {
+      color: #0077cc;
+    }
+    #map {
+      height: 400px;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <h1>🚍 Public Transport Navigator (Switzerland)</h1>
+  
+  <div class="search-box">
+    <label>From:</label>
+    <input type="text" id="from" placeholder="Enter starting station (e.g. Zurich)">
+    <label>To:</label>
+    <input type="text" id="to" placeholder="Enter destination station (e.g. Geneva)">
+    <button onclick="getConnections()">Search Route</button>
+  </div>
+
+  <div id="map"></div>
+  <div class="results" id="results"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([46.8, 8.3], 7); // Switzerland view
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    let routeLayer;
+
+    async function getConnections() {
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<p>Loading...</p>";
+
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+      }
+
+      try {
+        const res = await fetch(`https://transport.opendata.ch/v1/connections?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+        const data = await res.json();
+        resultsDiv.innerHTML = "";
+
+        if (!data.connections || data.connections.length === 0) {
+          resultsDiv.innerHTML = "<p>No connections found. Try another search.</p>";
+          return;
+        }
+
+        // Take the first route
+        const conn = data.connections[0];
+        const departure = new Date(conn.from.departure).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const arrival = new Date(conn.to.arrival).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const duration = conn.duration.split("d")[1].replace(/:/g, "h ") + "m";
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <p><strong>From:</strong> ${conn.from.station.name} (${departure})</p>
+          <p><strong>To:</strong> ${conn.to.station.name} (${arrival})</p>
+          <p><strong>Duration:</strong> ${duration}</p>
+          <p><strong>Transfers:</strong> ${conn.transfers}</p>
+        `;
+        resultsDiv.appendChild(card);
+
+        // Show each section (train, bus, walk)
+        conn.sections.forEach(sec => {
+          if (sec.journey) {
+            const inst = document.createElement("p");
+            inst.innerHTML = `🚍 Take <strong>${sec.journey.category} ${sec.journey.number}</strong> from ${sec.departure.station.name} → ${sec.arrival.station.name}`;
+            resultsDiv.appendChild(inst);
+          }
+        });
+
+        // Draw route on map if coordinates are available
+        const coords = [];
+        conn.sections.forEach(sec => {
+          if (sec.departure.location && sec.arrival.location) {
+            coords.push([sec.departure.location.coordinate.y, sec.departure.location.coordinate.x]);
+            coords.push([sec.arrival.location.coordinate.y, sec.arrival.location.coordinate.x]);
+          }
+        });
+        if (coords.length > 0) {
+          routeLayer = L.polyline(coords, {color: 'blue'}).addTo(map);
+          map.fitBounds(routeLayer.getBounds());
+        }
+
+      } catch (error) {
+        resultsDiv.innerHTML = "<p>⚠️ Error fetching transport data.</p>";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>  

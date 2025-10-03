@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ocean & Marine Encyclopedia — Advanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --deep-1: #001b2e;
+    --deep-2: #003a63;
+    --accent: #00c2d1;
+    --coral: #FF7043;
+    --glass: rgba(255,255,255,0.06);
+    --card-bg: rgba(255,255,255,0.03);
+    --muted: rgba(255,255,255,0.75);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Poppins",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    color:#eaf6f8;
+    background: radial-gradient(1000px 600px at 10% 10%, rgba(0,70,110,0.25), transparent),
+                linear-gradient(180deg, var(--deep-1) 0%, var(--deep-2) 100%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+  }
+
+  .shell{
+    width:100%;
+    max-width:1100px;
+    border-radius:18px;
+    padding:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+  }
+
+  header{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .brand{
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:12px;
+    background:linear-gradient(135deg,#00658f,#00a7c7);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;
+    color:white;box-shadow:0 6px 18px rgba(0,0,0,0.35);
+  }
+  .title{font-size:20px; font-weight:700; letter-spacing:0.2px}
+  .subtitle{color:var(--muted); font-size:13px; margin-top:2px}
+
+  .controls{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .search-wrap{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  input[type="search"]{
+    padding:12px 14px;
+    border-radius:12px;
+    border:none;
+    min-width:280px;
+    background:var(--glass);
+    color:inherit;
+    outline: none;
+  }
+  .btn{
+    padding:10px 14px;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    background:linear-gradient(180deg,var(--coral),#ff5c2a);
+    color:white;
+    box-shadow:0 6px 18px rgba(255,112,67,0.12);
+  }
+  .btn.secondary{
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.08);
+    color:var(--accent);
+  }
+  .suggestions{display:flex;gap:8px; margin-top:12px; flex-wrap:wrap}
+  .suggest-pill{
+    background: rgba(255,255,255,0.03);
+    border-radius:999px;padding:8px 12px; cursor:pointer; font-weight:600;
+    color:var(--accent); border:1px solid rgba(0,200,209,0.08);
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1fr 360px;
+    gap:18px;
+    margin-top:14px;
+  }
+
+  .results{
+    min-height:300px;
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap:12px;
+  }
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;
+    padding:10px;
+    border:1px solid rgba(255,255,255,0.03);
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    transition: transform .14s ease, box-shadow .14s ease;
+  }
+  .card:hover{ transform: translateY(-6px); box-shadow:0 18px 40px rgba(0,0,0,0.45) }
+  .thumb{
+    width:100px;height:100px;border-radius:10px; background:#0b2d3a; flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:var(--muted); font-size:12px; overflow:hidden;
+  }
+  .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .card .meta{flex:1}
+  .card h4{margin:0 0 6px; color:var(--accent); font-size:16px}
+  .card p{margin:0;color:var(--muted); font-size:13px}
+
+  .card .actions{display:flex;gap:8px; margin-top:8px}
+  .small-btn{
+    padding:6px 8px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px;
+    background:rgba(255,255,255,0.03); color:var(--accent);
+  }
+
+  .side{
+    position:relative;
+    border-radius:12px;padding:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.03);
+    min-height:320px;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .detail-title{font-weight:700;color:var(--accent); font-size:18px}
+  .detail-img{width:100%;height:180px;border-radius:10px;object-fit:cover;background:#06384a}
+  .detail-desc{color:var(--muted); font-size:14px}
+  .fact{background:rgba(0,0,0,0.08); padding:10px;border-radius:10px;color:#f3fff4; font-size:13px}
+
+  .favorites{
+    margin-top:8px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .fav-item{display:flex;gap:8px;align-items:center; background: rgba(255,255,255,0.02); padding:8px;border-radius:8px}
+  .fav-item img{width:44px;height:44px;border-radius:6px;object-fit:cover}
+
+  .spinner-overlay{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)); z-index:999;
+    display:none;
+  }
+  .spinner{
+    width:72px;height:72px;border-radius:50%; border:8px solid rgba(255,255,255,0.08);
+    border-top-color:var(--accent); animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  footer{margin-top:14px;color:var(--muted); font-size:13px; text-align:center}
+
+  @media(max-width:980px){
+    .layout{grid-template-columns: 1fr; }
+    .side{order:2}
+    .results{order:1}
+  }
+</style>
+</head>
+<body>
+<div class="shell" role="application" aria-labelledby="app-title">
+  <header>
+    <div class="brand">
+      <div class="logo">O</div>
+      <div>
+        <div id="app-title" class="title">Ocean & Marine Encyclopedia</div>
+        <div class="subtitle">Search marine species — images, summary & favorites</div>
+      </div>
+    </div>
+
+    <div class="controls" aria-hidden="false">
+      <div style="display:flex;flex-direction:column;">
+        <div class="search-wrap">
+          <input id="q" type="search" placeholder="Search (e.g., dolphin, shark, turtle)" aria-label="Search marine species">
+          <button id="searchBtn" class="btn">Search</button>
+          <button id="favToggle" class="btn secondary" title="View favorites">Favorites</button>
+        </div>
+        <div class="suggestions" aria-hidden="false">
+          <div class="suggest-pill" data-q="dolphin">Dolphin</div>
+          <div class="suggest-pill" data-q="shark">Shark</div>
+          <div class="suggest-pill" data-q="sea turtle">Sea turtle</div>
+          <div class="suggest-pill" data-q="octopus">Octopus</div>
+          <div class="suggest-pill" data-q="manta ray">Manta ray</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="results" class="results" aria-live="polite">
+      </div>
+    </section>
+
+    <aside class="side" id="side">
+      <div id="detail">
+        <div id="detailTitle" class="detail-title">Pick a species to see details</div>
+        <img id="detailImg" class="detail-img" alt="" style="display:none">
+        <div id="detailDesc" class="detail-desc">Search for a species using common names (e.g., "dolphin"). Results are from WoRMS; images and summaries are from Wikipedia when available.</div>
+      </div>
+
+      <div class="fact" id="fact">Random ocean fact will appear after search.</div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:700">My Favorites</div>
+          <button id="clearFav" class="small-btn">Clear</button>
+        </div>
+        <div class="favorites" id="favoritesList" aria-live="polite"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>Data: WoRMS (World Register of Marine Species) + Wikipedia</footer>
+</div>
+
+<div class="spinner-overlay" id="spinner"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<script>
+const WORMS_BASE = 'https://www.marinespecies.org/rest';
+const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary/';
+
+const el = {
+  q: document.getElementById('q'),
+  searchBtn: document.getElementById('searchBtn'),
+  results: document.getElementById('results'),
+  detailTitle: document.getElementById('detailTitle'),
+  detailImg: document.getElementById('detailImg'),
+  detailDesc: document.getElementById('detailDesc'),
+  fact: document.getElementById('fact'),
+  favoritesList: document.getElementById('favoritesList'),
+  favToggle: document.getElementById('favToggle'),
+  clearFav: document.getElementById('clearFav'),
+  spinner: document.getElementById('spinner'),
+  suggestions: document.querySelectorAll('.suggest-pill')
+};
+
+const RANDOM_FACTS = [
+  "Over 70% of Earth's surface is covered by oceans.",
+  "More than 80% of the ocean is unexplored and unmapped.",
+  "Blue whales are the largest animals ever known to have lived on Earth.",
+  "Coral reefs support about 25% of all marine species.",
+  "Some sea stars can regrow entire arms and, in some cases, their whole body.",
+  "Bioluminescence — producing light biologically — is common in deep-sea creatures."
+];
+
+function showSpinner(show = true){
+  el.spinner.style.display = show ? 'flex' : 'none';
+}
+
+function safeFetch(url){
+  return fetch(url, {headers: {'Accept': 'application/json'}})
+    .then(async r => {
+      if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      const text = await r.text();
+      if(!text) return {};
+      try { return JSON.parse(text); } 
+      catch(e){ throw new Error("Invalid JSON from server"); }
+    });
+}
+
+/* ========== Favorites ========== */
+const FAVORITES_KEY = 'ocean_favorites_v1';
+function loadFavorites(){ try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); } catch(e){ return []; } }
+function saveFavorites(list){ localStorage.setItem(FAVORITES_KEY, JSON.stringify(list)); renderFavorites(); }
+function addFavorite(item){ const list = loadFavorites(); if(list.some(f=>f.scientificName===item.scientificName)) return; list.unshift(item); saveFavorites(list); }
+function removeFavorite(scientificName){ const list = loadFavorites().filter(f=>f.scientificName!==scientificName); saveFavorites(list); }
+function clearFavorites(){ localStorage.removeItem(FAVORITES_KEY); renderFavorites(); }
+function renderFavorites(){
+  const list = loadFavorites();
+  el.favoritesList.innerHTML = list.length ? list.map(f => `
+    <div class="fav-item">
+      <img src="${f.image||'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" alt="${f.scientificName}">
+      <div style="flex:1">
+        <div style="font-weight:700">${f.display||f.scientificName}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.75)">${f.scientificName}</div>
+      </div>
+      <button class="small-btn" onclick="removeFavorite('${f.scientificName.replace(/'/g,"\\'")}')">Remove</button>
+    </div>
+  `).join('') : '<div style="color:var(--muted)">No favorites yet</div>';
+}
+
+/* ========== Wikipedia helper ========== */
+async function fetchWikiSummary(title){
+  try{
+    const data = await safeFetch(WIKI_SUMMARY + encodeURIComponent(title));
+    return { image: data.thumbnail?.source || null, extract: data.extract || '', title: data.title || title };
+  }catch(e){ return null; }
+}
+
+/* ========== Main: search WoRMS by vernacular OR scientific name ========== */
+async function searchSpecies(query){
+  if(!query) return;
+  showSpinner(true);
+  el.results.innerHTML = '';
+  el.detailTitle.textContent = 'Loading...';
+  el.detailImg.style.display = 'none';
+  el.detailDesc.textContent = '';
+
+  el.fact.textContent = RANDOM_FACTS[Math.floor(Math.random()*RANDOM_FACTS.length)];
+
+  try {
+    let data = [];
+    let url = `${WORMS_BASE}/AphiaRecordsByVernacular/${encodeURIComponent(query)}?like=true&marine_only=true`;
+    data = await safeFetch(url);
+
+    if(!Array.isArray(data) || data.length === 0){
+      url = `${WORMS_BASE}/AphiaRecordsByName/${encodeURIComponent(query)}?like=true&marine_only=true`;
+      data = await safeFetch(url);
+    }
+
+    if(!Array.isArray(data) || data.length === 0){
+      el.results.innerHTML = `<div style="grid-column:1/-1;color:var(--muted);padding:14px;background:rgba(255,255,255,0.02);border-radius:10px">No marine species found for "${query}". Try a different term or a valid scientific name.</div>`;
+      el.detailTitle.textContent = 'No species selected';
+      el.detailDesc.textContent = '';
+      return;
+    }
+
+    const cards = [];
+    for(const rec of data){
+      const scientific = rec.valid_name || rec.scientificname || rec.scientific;
+      const display = rec.vernacular || rec.valid_name || rec.scientificname;
+      let wiki = await fetchWikiSummary(scientific);
+      if(!wiki && rec.vernacular) wiki = await fetchWikiSummary(rec.vernacular);
+
+      const item = {
+        scientificName: scientific,
+        display: display,
+        rank: rec.rank || '',
+        family: rec.family || '',
+        kingdom: rec.kingdom || '',
+        aphiaID: rec.AphiaID || rec.aphiaID || null,
+        image: wiki?.image || null,
+        extract: wiki?.extract || ''
+      };
+      cards.push(item);
+    }
+
+    el.results.innerHTML = cards.map(it => `
+      <div class="card" role="article" tabindex="0">
+        <div class="thumb">${it.image ? `<img src="${it.image}" alt="${it.display}">` : '<div style="padding:8px">No image</div>'}</div>
+        <div class="meta">
+          <h4>${it.display}</h4>
+          <p><em>${it.scientificName}</em></p>
+          <p class="muted">${it.rank ? it.rank + ' • ' : ''}${it.family ? it.family : ''}</p>
+          <div class="actions">
+            <button class="small-btn" data-scientific="${it.scientificName}" data-display="${it.display}" data-image="${it.image||''}" onclick="addFavorite(this.dataset)">Favorite</button>
+            <button class="small-btn" onclick="showDetail('${it.scientificName}','${it.display}','${it.image||''}','${it.extract||''}')">View</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    const first = cards[0];
+    if(first) showDetail(first.scientificName, first.display, first.image, first.extract);
+
+  }catch(err){
+    el.results.innerHTML = `<div style="grid-column:1/-1;color:#ffddcc;padding:14px;background:rgba(0,0,0,0.12);border-radius:10px">Error: ${err.message}</div>`;
+    el.detailTitle.textContent = 'Error';
+    el.detailDesc.textContent = '';
+    console.error(err);
+  }finally{
+    showSpinner(false);
+  }
+}
+
+/* ========== Show species details ========== */
+function showDetail(scientific, display, img, extract){
+  el.detailTitle.textContent = display;
+  if(img){ el.detailImg.src = img; el.detailImg.style.display='block'; } else { el.detailImg.style.display='none'; }
+  el.detailDesc.textContent = extract || 'No description available.';
+}
+
+/* ========== Events ========== */
+el.searchBtn.addEventListener('click', ()=> searchSpecies(el.q.value));
+el.q.addEventListener('keypress', e=>{ if(e.key==='Enter') searchSpecies(el.q.value); });
+el.clearFav.addEventListener('click', ()=> clearFavorites());
+el.suggestions.forEach(pill=>pill.addEventListener('click',()=>{ el.q.value = pill.dataset.q; searchSpecies(el.q.value); }));
+
+renderFavorites();
+</script>
+</body>
+</html>

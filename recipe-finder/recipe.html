@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Finder</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #fdfdfd;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .search-container {
+            margin: 20px 0;
+        }
+
+        #search-input {
+            padding: 10px;
+            width: 60%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        #search-btn {
+            padding: 10px 20px;
+            background: #ff7043;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: 0.3s;
+        }
+
+        #search-btn:hover {
+            background: #ff5722;
+        }
+
+        .results-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .recipe-card {
+            width: 200px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .recipe-card:hover {
+            transform: scale(1.05);
+        }
+
+        .recipe-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+        }
+
+        .recipe-card h3 {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .recipe-card a {
+            display: block;
+            padding: 10px;
+            background: #ff7043;
+            color: white;
+            text-decoration: none;
+            border-top: 1px solid #eee;
+        }
+
+        .recipe-card a:hover {
+            background: #ff5722;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <h1>🍲 Recipe Finder</h1>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Enter an ingredient...">
+            <button id="search-btn">Search</button>
+        </div>
+        <div id="results" class="results-container"></div>
+    </div>
+    <!-- <script src="script.js"></script> -->
+    <script>
+        document.getElementById('search-btn').addEventListener('click', findRecipes);
+
+        async function findRecipes() {
+            const query = document.getElementById('search-input').value.trim();
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = "";
+
+            if (!query) {
+                resultsContainer.innerHTML = "<p>Please enter an ingredient 🍅</p>";
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${query}`);
+                const data = await response.json();
+
+                if (!data.meals) {
+                    resultsContainer.innerHTML = "<p>No recipes found 🙁. Try another ingredient!</p>";
+                    return;
+                }
+
+                data.meals.forEach(meal => {
+                    const card = document.createElement('div');
+                    card.className = 'recipe-card';
+
+                    card.innerHTML = `
+        <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
+        <h3>${meal.strMeal}</h3>
+        <a href="https://www.themealdb.com/meal/${meal.idMeal}" target="_blank">View Recipe</a>
+      `;
+
+                    resultsContainer.appendChild(card);
+                });
+            } catch (error) {
+                resultsContainer.innerHTML = "<p>Error fetching recipes. Please try again later 🛠️</p>";
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+
+</html>

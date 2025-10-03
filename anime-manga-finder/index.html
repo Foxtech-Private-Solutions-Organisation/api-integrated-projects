@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime & Manga Finder — AniList</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1724;
+      --card: #0b1220;
+      --muted: #9aa4b2;
+      --accent: #7c3aed;
+      --glass: rgba(255, 255, 255, 0.03);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial;
+      margin: 0; background: linear-gradient(180deg,#071022 0%,#07101a 60%);
+      color: #e6eef6; min-height: 100vh;
+    }
+    header {
+      display:flex; gap:12px; align-items:center; padding:18px;
+      position:sticky; top:0; background: linear-gradient(180deg, rgba(3,7,18,0.6), transparent);
+      backdrop-filter: blur(6px); z-index:10;
+    }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo .mark {
+      width:44px; height:44px; border-radius:10px;
+      background: linear-gradient(135deg, var(--accent), #06b6d4);
+      display:grid; place-items:center; font-weight:700; color:#07101a;
+    }
+    .search-bar { flex:1; display:flex; gap:8px; }
+    .search-bar input {
+      flex:1; padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,0.06); background:var(--glass);
+      color:inherit; outline:none;
+    }
+    .controls { display:flex; gap:8px; align-items:center; }
+    select, button {
+      padding:9px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
+      background:transparent; color:inherit;
+    }
+    main { padding:20px; display:grid; grid-template-columns:260px 1fr; gap:18px; }
+    aside {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      padding:16px; border-radius:12px;
+      height:calc(100vh-120px); position:sticky; top:72px; overflow:auto;
+    }
+    .filters label { display:block; margin-top:10px; color:var(--muted); font-size:13px; }
+    .results { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+    .card {
+      background:var(--card); padding:10px; border-radius:10px;
+      display:flex; flex-direction:column; gap:8px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .card img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:8px; }
+    .card .title { font-weight:600; font-size:14px; }
+    .card .meta { font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
+    .footer-actions { display:flex; gap:6px; align-items:center; }
+    .pill { padding:6px 8px; border-radius:999px; background: rgba(255,255,255,0.02); font-size:12px; }
+    .loading { display:grid; place-items:center; padding:30px; color:var(--muted); }
+    .modal {
+      position:fixed; inset:0; background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.9));
+      display:none; place-items:center; z-index:40;
+    }
+    .modal.open { display:grid; }
+    .modal-content {
+      width:min(1000px,96vw); max-height:86vh; overflow:auto;
+      background: linear-gradient(180deg,#071928,#08111a); padding:18px;
+      border-radius:12px; border:1px solid rgba(255,255,255,0.03);
+    }
+    .grid-two { display:grid; grid-template-columns:260px 1fr; gap:12px; }
+    .big-cover { width:100%; border-radius:8px; }
+    .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .kbd { background: rgba(255,255,255,0.03); padding:6px 8px; border-radius:6px; font-size:12px; }
+    .fav { cursor:pointer; }
+    .toolbar { display:flex; gap:8px; align-items:center; }
+    .empty { padding:30px; text-align:center; color:var(--muted); }
+    @media(max-width:900px) { main { grid-template-columns:1fr; } aside { position:relative; height:auto; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="mark">AM</div>
+      <div>
+        <div style="font-weight:700">Anime & Manga Finder</div>
+        <div style="font-size:12px;color:var(--muted)">Powered by AniList GraphQL</div>
+      </div>
+    </div>
+    <div class="search-bar">
+      <input id="search" placeholder='Search anime or manga, e.g. "Attack on Titan"' autocomplete="off">
+      <button id="searchBtn">Search</button>
+    </div>
+    <div class="controls">
+      <select id="typeSelect">
+        <option value="ANIME">Anime</option>
+        <option value="MANGA">Manga</option>
+      </select>
+      <select id="sortSelect">
+        <option value="SCORE_DESC">Top Rated</option>
+        <option value="POPULARITY_DESC">Most Popular</option>
+        <option value="TITLE_ROMAJI">Title A→Z</option>
+      </select>
+      <button id="toggleTheme">Favorites ♥</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="filters">
+        <label>Genres (comma separated)</label>
+        <input id="genreInput" placeholder="Action,Romance,Comedy">
+        <label>Min Score</label>
+        <input id="minScore" type="number" min="0" max="100" step="1" placeholder="70">
+        <label>Year / Published</label>
+        <input id="yearInput" placeholder="2020 or 2000-2010">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="resetFilters">Reset</button>
+          <button id="applyFilters">Apply</button>
+        </div>
+        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(255,255,255,0.04)">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div style="font-weight:600">Favorites</div>
+          <div style="font-size:12px;color:var(--muted)" id="favCount">0</div>
+        </div>
+        <div id="favoritesList" style="margin-top:8px; display:flex; flex-direction:column; gap:8px"></div>
+      </div>
+    </aside>
+
+    <section>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+        <div style="color:var(--muted)" id="summary">No results yet</div>
+        <div class="toolbar"><div class="kbd">Enter:Search</div></div>
+      </div>
+      <div id="resultArea"><div class="loading" id="loading">Type a query and press search</div></div>
+      <div style="height:18px"></div>
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:12px">
+        <button id="prevPage">Prev</button>
+        <div id="pageInfo" style="align-self:center;color:var(--muted)">Page 1</div>
+        <button id="nextPage">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-content" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <script>
+    const state = { q:"", type:"ANIME", page:1, limit:10, results:[], total:0, sort:"SCORE_DESC", filters:{} };
+    const $ = (s)=>document.querySelector(s);
+    const favKey = "am_favorites_v1";
+
+    function loadFavs(){try{return JSON.parse(localStorage.getItem(favKey)||"[]")}catch(e){return[]}}
+    function saveFavs(list){localStorage.setItem(favKey, JSON.stringify(list))}
+    function toggleFav(item){
+      const list = loadFavs();
+      const idx = list.findIndex(i=>i.id===item.id && i.type===item.type);
+      if(idx>-1) list.splice(idx,1); else list.push(item);
+      saveFavs(list); renderFavs();
+    }
+    function renderFavs(){
+      const list=loadFavs();
+      $("#favCount").textContent=list.length;
+      const container=$("#favoritesList"); container.innerHTML="";
+      if(list.length===0){container.innerHTML='<div class="empty">No favorites yet</div>'; return;}
+      list.slice().reverse().forEach(i=>{
+        const el=document.createElement("div");
+        el.style.display="flex"; el.style.justifyContent="space-between"; el.style.alignItems="center"; el.style.gap="8px";
+        el.innerHTML=`<div style="display:flex;gap:8px;align-items:center">
+          <img src="${i.coverImage||""}" style="width:40px;height:56px;object-fit:cover;border-radius:6px">
+          <div style="font-size:13px">${i.title}</div></div>
+          <div><button data-id="${i.id}" class="openFav">Open</button> 
+          <button data-id="${i.id}" class="removeFav">✕</button></div>`;
+        container.appendChild(el);
+      });
+    }
+
+    document.addEventListener("click",(e)=>{
+      if(e.target.matches(".openFav")){
+        const id=e.target.dataset.id;
+        const item=loadFavs().find(x=>String(x.id)===id);
+        if(item) openModal(item);
+      }
+      if(e.target.matches(".removeFav")){
+        const id=e.target.dataset.id;
+        const list=loadFavs();
+        const idx=list.findIndex(x=>String(x.id)===id);
+        if(idx>-1){list.splice(idx,1); saveFavs(list); renderFavs();}
+      }
+    });
+
+    async function fetchResults(){
+      const query=`
+        query($search:String,$type:MediaType,$sort:[MediaSort]) {
+          Page(page:${state.page}, perPage:${state.limit}) {
+            pageInfo { total, currentPage, lastPage }
+            media(search:$search, type:$type, sort:$sort) {
+              id
+              type
+              title { romaji }
+              coverImage { large }
+              description
+              episodes
+              chapters
+              status
+              genres
+            }
+          }
+        }`;
+      const variables={ search: state.q, type: state.type, sort:[state.sort] };
+      renderLoading();
+      try{
+        const r=await fetch("https://graphql.anilist.co",{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ query, variables })
+        });
+        const j=await r.json();
+        if(j.errors){ console.error("GraphQL errors:",j.errors); $("#resultArea").innerHTML='<div class="loading">Error fetching data</div>'; return; }
+        state.results=j.data.Page.media;
+        renderResults();
+      }catch(err){ console.error(err); $("#resultArea").innerHTML='<div class="loading">Error fetching data</div>'; }
+    }
+
+    function renderLoading(){ $("#resultArea").innerHTML='<div class="loading">Loading…</div>'; }
+
+    function renderResults(){
+      const area=$("#resultArea"); area.innerHTML="";
+      if(!state.results || state.results.length===0){ area.innerHTML='<div class="empty">No results</div>'; $("#summary").textContent="0 results"; return; }
+      const grid=document.createElement("div"); grid.className="results";
+      state.results.forEach(item=>{
+        const card=document.createElement("article"); card.className="card";
+        card.innerHTML=`
+          <img src="${item.coverImage.large||""}" alt="${item.title.romaji}">
+          <div class="title">${item.title.romaji}</div>
+          <div class="meta"><div>${item.type}</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+            <div class="footer-actions">
+              <button class="openDetail" data-id="${item.id}">Details</button>
+              <button class="fav" data-id="${item.id}">♥</button>
+            </div>
+          </div>`;
+        grid.appendChild(card);
+        card.querySelector(".openDetail").addEventListener("click",()=>openDetail(item));
+        card.querySelector(".fav").addEventListener("click",()=>toggleFav({ id:item.id, type:item.type, title:item.title.romaji, coverImage:item.coverImage.large }));
+      });
+      area.appendChild(grid);
+      $("#summary").textContent=`Showing ${state.results.length} results — page ${state.page}`;
+      $("#pageInfo").textContent=`Page ${state.page}`;
+    }
+
+    async function openDetail(item){
+      openModal(item);
+    }
+
+    async function openModal(data){
+      const modal=$("#modal"); const content=modal.querySelector(".modal-content");
+      content.innerHTML='<div class="loading">Loading details…</div>';
+      modal.classList.add("open");
+      content.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">${data.title.romaji}</div>
+          <div><button id="favModal">${isFav(data)?"Remove ♥":"Add ♥"}</button>
+          <button id="closeModal">Close</button></div>
+        </div>
+        <div class="grid-two" style="margin-top:12px">
+          <div><img class="big-cover" src="${data.coverImage.large}" alt="cover"></div>
+          <div>
+            <div style="color:var(--muted);font-size:14px">${data.description||"No description"}</div>
+            <div class="tags">${(data.genres||[]).map(g=>`<div class="pill">${g}</div>`).join("")}</div>
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+              <div class="pill">Episodes/Chapters: ${data.episodes||data.chapters||"—"}</div>
+              <div class="pill">Status: ${data.status||"—"}</div>
+            </div>
+          </div>
+        </div>`;
+      content.querySelector("#closeModal").addEventListener("click",()=>modal.classList.remove("open"));
+      content.querySelector("#favModal").addEventListener("click",()=>{
+        toggleFav({ id:data.id, type:data.type, title:data.title.romaji, coverImage:data.coverImage.large });
+        content.querySelector("#favModal").textContent=isFav(data)?"Remove ♥":"Add ♥";
+      });
+    }
+
+    function isFav(data){ return loadFavs().some(i=>i.id===data.id); }
+    $("#modal").addEventListener("click",(e)=>{ if(e.target.id==="modal") modal.classList.remove("open"); });
+
+    $("#search").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ state.q=$("#search").value; state.page=1; fetchResults(); }});
+    $("#searchBtn").addEventListener("click",()=>{ state.q=$("#search").value; state.page=1; fetchResults(); });
+    $("#typeSelect").addEventListener("change",(e)=>{ state.type=e.target.value; state.page=1; fetchResults(); });
+    $("#sortSelect").addEventListener("change",(e)=>{ state.sort=e.target.value; state.page=1; fetchResults(); });
+    $("#nextPage").addEventListener("click",()=>{ state.page++; fetchResults(); });
+    $("#prevPage").addEventListener("click",()=>{ if(state.page>1){ state.page--; fetchResults(); } });
+    $("#resetFilters").addEventListener("click",()=>{ $("#genreInput").value=""; $("#minScore").value=""; $("#yearInput").value=""; state.filters={}; fetchResults(); });
+    $("#applyFilters").addEventListener("click",()=>{ const g=$("#genreInput").value.trim(); if(g) state.filters.genres=g.split(",").map(s=>s.trim()).filter(Boolean).join(","); const ms=$("#minScore").value; if(ms) state.filters.min_score=ms; const y=$("#yearInput").value.trim(); if(y) state.filters.year=y; state.page=1; fetchResults(); });
+
+    renderFavs();
+  </script>
+</body>
+</html>
